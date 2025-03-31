@@ -1,12 +1,12 @@
 // Factory provides a common context for sourcing and distrubting data.
 // Includes an Ethereum, HTTP, RPC client, a database connection, and json i/o logic.
-// https://pkg.go.dev/github.com/zachklingbeil/factory
 package factory
 
 import (
 	"context"
 	"database/sql"
 	"net/http"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -20,6 +20,7 @@ type Factory struct {
 	Http *http.Client
 	Rpc  *rpc.Client
 	Json *cmd.JSON
+	Mu   sync.Mutex
 }
 
 func NewFactory() (*Factory, error) {

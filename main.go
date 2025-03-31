@@ -4,7 +4,6 @@ package factory
 
 import (
 	"context"
-	"database/sql"
 	"net/http"
 	"sync"
 
@@ -15,7 +14,7 @@ import (
 
 type Factory struct {
 	Ctx  context.Context
-	Db   *sql.DB
+	Db   *cmd.Database
 	Eth  *ethclient.Client
 	Http *http.Client
 	Rpc  *rpc.Client
@@ -31,7 +30,7 @@ func NewFactory() (*Factory, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	db := cmd.NewDatabase()
 	json := cmd.Json(*http, ctx)
 	return &Factory{
 		Rpc:  rpc,
@@ -39,5 +38,6 @@ func NewFactory() (*Factory, error) {
 		Http: http,
 		Json: json,
 		Ctx:  ctx,
+		Db:   db,
 	}, nil
 }

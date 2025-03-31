@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"time"
 
@@ -17,8 +18,11 @@ import (
 //
 // or
 // error: An error if the connection cannot be established.
-func Database() *sql.DB {
-	db, err := sql.Open("postgres", "user=postgres password=postgres dbname=postgres host=postgres port=5432 sslmode=disable")
+func Database(dbName string) *sql.DB {
+	// Format the connection string with the provided database name
+	conn := fmt.Sprintf("user=postgres password=postgres dbname=%s host=postgres port=5432 sslmode=disable", dbName)
+
+	db, err := sql.Open("postgres", conn)
 	if err != nil {
 		log.Fatalf("Error opening database connection: %v", err)
 	}
@@ -29,9 +33,10 @@ func Database() *sql.DB {
 			log.Println("Database connection established successfully.")
 			return db
 		}
+		log.Printf("Retrying database connection (%d/%d)...", i, maxRetries)
 		time.Sleep(time.Second * time.Duration(i*2))
 	}
-	log.Fatalf("Error connecting to the database.")
+	log.Fatalf("Error connecting to the database after %d retries.", maxRetries)
 	return nil
 }
 

@@ -23,7 +23,7 @@ type Factory struct {
 	Mu   sync.Mutex
 }
 
-func NewFactory() (*Factory, error) {
+func NewFactory(dbName string) (*Factory, error) {
 	ctx := context.Background()
 	http := &http.Client{}
 
@@ -32,7 +32,7 @@ func NewFactory() (*Factory, error) {
 		return nil, err
 	}
 
-	db := cmd.Database()
+	db := cmd.Database(dbName)
 	if db == nil {
 		return nil, err
 	}

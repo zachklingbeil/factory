@@ -19,14 +19,12 @@ import (
 // or
 // error: An error if the connection cannot be established.
 func Database(dbName string) *sql.DB {
-	// Format the connection string with the provided database name
 	conn := fmt.Sprintf("user=postgres password=postgres dbname=%s host=postgres port=5432 sslmode=disable", dbName)
 
 	db, err := sql.Open("postgres", conn)
 	if err != nil {
-		log.Fatalf("Error opening database connection: %v", err)
+		log.Fatalf("Error opening connection to database '%s': %v", dbName, err)
 	}
-
 	maxRetries := 5
 	for i := 1; i <= maxRetries; i++ {
 		if err := db.Ping(); err == nil {

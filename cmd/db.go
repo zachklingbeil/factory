@@ -20,6 +20,7 @@ type Database struct {
 func NewDatabase() *Database {
 	return &Database{
 		Conn: make(map[string]*sql.DB),
+		Mu:   &sync.Mutex{},
 	}
 }
 

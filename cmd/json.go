@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -36,8 +37,8 @@ func (j *JSON) Print(value any) {
 	fmt.Println(string(json))
 }
 
-// Execute HTTP GET requests, with X-API-KEY headers as needed, decode the response or return an error when the request fails or the response cannot be decoded.
-func (j *JSON) In(url string, useAPIKey bool, apiKey string) (any, error) {
+// Execute HTTP GET requests, with X-API-KEY headers as needed, and return the response body as bytes.
+func (j *JSON) In(url string, useAPIKey bool, apiKey string) ([]byte, error) {
 	// Create a new HTTP GET request with the provided context
 	req, err := http.NewRequestWithContext(j.CTX, "GET", url, nil)
 	if err != nil {
@@ -66,12 +67,12 @@ func (j *JSON) In(url string, useAPIKey bool, apiKey string) (any, error) {
 		return nil, fmt.Errorf("empty response body")
 	}
 
-	// Decode the JSON response into a generic `any` type
-	var result any
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to decode JSON: %w", err)
+	// Read and return the response body as bytes
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
-	return result, nil
+	return body, nil
 }
 
 // Out writes single response for http requests, using a function to source data and a locker to synchronize access or an HTTP 500 error when the input function fails or JSON encoding fails.

@@ -38,15 +38,15 @@ func (j *JSON) Print(value any) {
 }
 
 // Execute HTTP GET requests, with X-API-KEY headers as needed, and return the response body as bytes.
-func (j *JSON) In(url string, useAPIKey bool, apiKey string) ([]byte, error) {
+func (j *JSON) In(url, apiKey string) ([]byte, error) {
 	// Create a new HTTP GET request with the provided context
 	req, err := http.NewRequestWithContext(j.CTX, "GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request for URL %s: %w", url, err)
 	}
 
-	// Add API key header if required
-	if useAPIKey && apiKey != "" {
+	// Add API key header if apiKey is provided
+	if apiKey != "" {
 		req.Header.Set("X-API-KEY", apiKey)
 	}
 

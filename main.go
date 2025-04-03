@@ -65,7 +65,7 @@ func NewDatabase(dbName string) (*sql.DB, error) {
 	for i := 1; i <= maxRetries; i++ {
 		if err := db.Ping(); err == nil {
 			log.Println("Connected to database")
-			return &sql.DB{}, nil
+			return db, nil
 		}
 
 		log.Printf("Connection attempt %d/%d failed. Retrying in %ds...",

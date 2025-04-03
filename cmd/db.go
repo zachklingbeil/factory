@@ -44,7 +44,7 @@ func (d *Database) Connect(dbName string) (*sql.DB, error) {
 	const maxRetries = 5
 	for i := 1; i <= maxRetries; i++ {
 		if err := db.Ping(); err == nil {
-			log.Printf("Connection to database '%s' established successfully.", dbName)
+			log.Printf("Connected to %s database.", dbName)
 			d.Conn[dbName] = db
 			return db, nil
 		}

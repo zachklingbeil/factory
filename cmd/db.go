@@ -31,7 +31,6 @@ func (d *Database) Connect(dbName string) (*sql.DB, error) {
 
 	// Return existing connection if it exists
 	if db, exists := d.Conn[dbName]; exists {
-		log.Printf("Reusing existing connection to database '%s'.", dbName)
 		return db, nil
 	}
 

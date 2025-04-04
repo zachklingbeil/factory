@@ -3,6 +3,7 @@ package factory
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
@@ -10,7 +11,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	_ "github.com/lib/pq" // PostgreSQL driver
+	_ "github.com/lib/pq"
 	"github.com/zachklingbeil/factory/cmd"
 )
 
@@ -71,4 +72,63 @@ func database(dbName string) (*sql.DB, error) {
 		time.Sleep(time.Second * time.Duration(i*2))
 	}
 	return nil, fmt.Errorf("failed to connect to database '%s' after %d retries", dbName, maxRetries)
+}
+
+// DiskToMem converts tables into slices of structs.
+func (f *Factory) DiskToMem(table string, result any) error {
+	query := fmt.Sprintf("SELECT * FROM %s", table)
+	rows, err := f.Db.Query(query)
+	if err != nil {
+		return fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	cols, err := rows.Columns()
+	if err != nil {
+		return fmt.Errorf("failed to get columns: %w", err)
+	}
+
+	// Prepare a slice to hold JSON objects
+	var jsonRows []map[string]any
+
+	for rows.Next() {
+		// Create a map to hold the row data
+		rowMap := make(map[string]any, len(cols))
+		values := make([]any, len(cols))
+		valuePtrs := make([]any, len(cols))
+
+		// Assign pointers to the values
+		for i := range values {
+			valuePtrs[i] = &values[i]
+		}
+
+		// Scan the row into the value pointers
+		if err := rows.Scan(valuePtrs...); err != nil {
+			return fmt.Errorf("scan failed: %w", err)
+		}
+
+		// Map the column names to their corresponding values
+		for i, col := range cols {
+			rowMap[col] = values[i]
+		}
+
+		// Append the row map to the JSON rows slice
+		jsonRows = append(jsonRows, rowMap)
+	}
+
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iteration error: %w", err)
+	}
+
+	// Marshal the JSON rows slice into a JSON array
+	jsonData, err := json.Marshal(jsonRows)
+	if err != nil {
+		return fmt.Errorf("failed to marshal results to JSON: %w", err)
+	}
+
+	// Unmarshal the JSON data into the provided result slice
+	if err := json.Unmarshal(jsonData, result); err != nil {
+		return fmt.Errorf("failed to unmarshal JSON into result: %w", err)
+	}
+	return nil
 }

@@ -88,19 +88,19 @@ func (f *Factory) DiskToMem(table string, result any) error {
 		return fmt.Errorf("failed to get columns: %w", err)
 	}
 
-	// Prepare a slice to hold JSON objects
-	var jsonRows []map[string]any
+	// Preallocate slices to reduce memory allocations
+	colCount := len(cols)
+	jsonRows := make([]map[string]any, 0, 100000) // Assuming a default capacity of 100,000 rows
+	values := make([]any, colCount)
+	valuePtrs := make([]any, colCount)
+
+	for i := range values {
+		valuePtrs[i] = &values[i]
+	}
 
 	for rows.Next() {
 		// Create a map to hold the row data
-		rowMap := make(map[string]any, len(cols))
-		values := make([]any, len(cols))
-		valuePtrs := make([]any, len(cols))
-
-		// Assign pointers to the values
-		for i := range values {
-			valuePtrs[i] = &values[i]
-		}
+		rowMap := make(map[string]any, colCount)
 
 		// Scan the row into the value pointers
 		if err := rows.Scan(valuePtrs...); err != nil {
@@ -120,7 +120,7 @@ func (f *Factory) DiskToMem(table string, result any) error {
 		return fmt.Errorf("iteration error: %w", err)
 	}
 
-	// Marshal the JSON rows slice into a JSON array
+	// Directly encode the JSON rows slice into the provided result
 	jsonData, err := json.Marshal(jsonRows)
 	if err != nil {
 		return fmt.Errorf("failed to marshal results to JSON: %w", err)

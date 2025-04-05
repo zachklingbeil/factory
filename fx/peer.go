@@ -1,7 +1,6 @@
 package fx
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -92,23 +91,27 @@ func (p *Peers) LoadMap() error {
 	p.Mu.Lock()
 	defer p.Mu.Unlock()
 
-	// Query the map data from the database
-	query := `SELECT data FROM peers ORDER BY updated_at DESC LIMIT 1`
-	var jsonData []byte
-	err := p.Db.QueryRow(query).Scan(&jsonData)
+	// Query all rows from the peers table
+	query := `SELECT address, ens, loopring_ens, loopring_id FROM peers`
+	rows, err := p.Db.Query(query)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			// No data in the database, initialize an empty map
-			p.Map = make(map[string]*Peer)
-			return nil
-		}
-		return fmt.Errorf("failed to load map from database: %w", err)
+		return fmt.Errorf("failed to load peers from database: %w", err)
 	}
+	defer rows.Close()
 
-	// Deserialize the JSON data into the map
-	err = json.Unmarshal(jsonData, &p.Map)
-	if err != nil {
-		return fmt.Errorf("failed to deserialize map: %w", err)
+	// Clear the map and populate it with data from the database
+	p.Map = make(map[string]*Peer)
+	for rows.Next() {
+		var address, ens, loopringENS, loopringID string
+		if err := rows.Scan(&address, &ens, &loopringENS, &loopringID); err != nil {
+			return fmt.Errorf("failed to scan row: %w", err)
+		}
+		p.Map[address] = &Peer{
+			Address:     address,
+			ENS:         ens,
+			LoopringENS: loopringENS,
+			LoopringID:  loopringID,
+		}
 	}
 
 	return nil
@@ -118,21 +121,20 @@ func (p *Peers) SaveMap() error {
 	p.Mu.RLock()
 	defer p.Mu.RUnlock()
 
-	jsonData, err := json.Marshal(p.Map)
-	if err != nil {
-		return fmt.Errorf("failed to serialize map: %w", err)
-	}
-
-	// Insert or update the map in the database
-	query := `
-        INSERT INTO peers (data, updated_at)
-        VALUES ($1, NOW())
-        ON CONFLICT (id) DO UPDATE
-        SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at
-    `
-	_, err = p.Db.Exec(query, jsonData)
-	if err != nil {
-		return fmt.Errorf("failed to save map to database: %w", err)
+	// Iterate over the map and save each peer
+	for address, peer := range p.Map {
+		query := `
+        INSERT INTO peers (address, ens, loopring_ens, loopring_id)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (address) DO UPDATE
+        SET ens = EXCLUDED.ens,
+            loopring_ens = EXCLUDED.loopring_ens,
+            loopring_id = EXCLUDED.loopring_id
+        `
+		_, err := p.Db.Exec(query, address, peer.ENS, peer.LoopringENS, peer.LoopringID)
+		if err != nil {
+			return fmt.Errorf("failed to save peer with address %s: %w", address, err)
+		}
 	}
 
 	return nil
@@ -155,9 +157,10 @@ func (p *Peers) Checkpoint(intervalSeconds int) {
 func (p *Peers) CreateTable() error {
 	query := `
     CREATE TABLE IF NOT EXISTS peers (
-        id SERIAL PRIMARY KEY,
-        data JSONB NOT NULL,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        address TEXT PRIMARY KEY,
+        ens TEXT,
+        loopring_ens TEXT,
+        loopring_id TEXT
     )`
 	_, err := p.Db.Exec(query)
 	if err != nil {

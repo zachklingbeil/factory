@@ -7,7 +7,11 @@ import (
 	"time"
 )
 
-func Database(dbName string) (*sql.DB, error) {
+type Database struct {
+	Db *sql.DB
+}
+
+func NewDatabase(dbName string) (*Database, error) {
 	connStr := fmt.Sprintf("user=postgres password=postgres dbname=%s host=postgres port=5432 sslmode=disable", dbName)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
@@ -18,7 +22,7 @@ func Database(dbName string) (*sql.DB, error) {
 	for i := 1; i <= maxRetries; i++ {
 		if err := db.Ping(); err == nil {
 			fmt.Printf("Connected to database '%s'\n", dbName)
-			return db, nil
+			return &Database{Db: db}, nil // Wrap the *sql.DB in the *fx.Database struct
 		}
 		fmt.Printf("Retrying connection to database '%s' (%d/%d)...\n", dbName, i, maxRetries)
 		time.Sleep(time.Second * time.Duration(i*2))
@@ -27,9 +31,9 @@ func Database(dbName string) (*sql.DB, error) {
 }
 
 // DiskToMem converts tables into slices of structs.
-func DiskToMem(Db *sql.DB, table string, result any) error {
+func (d *Database) DiskToMem(table string, result any) error {
 	query := fmt.Sprintf("SELECT * FROM %s", table)
-	rows, err := Db.Query(query)
+	rows, err := d.Db.Query(query)
 	if err != nil {
 		return fmt.Errorf("query failed: %w", err)
 	}
@@ -76,9 +80,9 @@ func DiskToMem(Db *sql.DB, table string, result any) error {
 	return nil
 }
 
-func ColumnToSlice(Db *sql.DB, table string, column string, result any) error {
+func (d *Database) ColumnToSlice(table string, column string, result any) error {
 	query := fmt.Sprintf("SELECT %s FROM %s", column, table)
-	rows, err := Db.Query(query)
+	rows, err := d.Db.Query(query)
 	if err != nil {
 		return fmt.Errorf("query failed: %w", err)
 	}

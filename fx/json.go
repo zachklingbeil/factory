@@ -1,7 +1,7 @@
 // Json i/o
 // Json in: execute & decode http requests
 // Json out: handle & encode http responses, server-side streaming
-package cmd
+package fx
 
 import (
 	"bytes"

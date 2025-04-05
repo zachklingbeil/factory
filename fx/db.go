@@ -8,7 +8,7 @@ import (
 )
 
 type Database struct {
-	Db *sql.DB
+	*sql.DB
 }
 
 func NewDatabase(dbName string) (*Database, error) {
@@ -22,7 +22,7 @@ func NewDatabase(dbName string) (*Database, error) {
 	for i := 1; i <= maxRetries; i++ {
 		if err := db.Ping(); err == nil {
 			fmt.Printf("Connected to database '%s'\n", dbName)
-			return &Database{Db: db}, nil // Wrap the *sql.DB in the *fx.Database struct
+			return &Database{DB: db}, nil
 		}
 		fmt.Printf("Retrying connection to database '%s' (%d/%d)...\n", dbName, i, maxRetries)
 		time.Sleep(time.Second * time.Duration(i*2))
@@ -33,7 +33,7 @@ func NewDatabase(dbName string) (*Database, error) {
 // DiskToMem converts tables into slices of structs.
 func (d *Database) DiskToMem(table string, result any) error {
 	query := fmt.Sprintf("SELECT * FROM %s", table)
-	rows, err := d.Db.Query(query)
+	rows, err := d.Query(query)
 	if err != nil {
 		return fmt.Errorf("query failed: %w", err)
 	}
@@ -82,7 +82,7 @@ func (d *Database) DiskToMem(table string, result any) error {
 
 func (d *Database) ColumnToSlice(table string, column string, result any) error {
 	query := fmt.Sprintf("SELECT %s FROM %s", column, table)
-	rows, err := d.Db.Query(query)
+	rows, err := d.Query(query)
 	if err != nil {
 		return fmt.Errorf("query failed: %w", err)
 	}

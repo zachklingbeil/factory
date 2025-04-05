@@ -61,19 +61,22 @@ func (p *Peers) HelloUniverse(value string) {
 	p.Mu.Lock()
 	defer p.Mu.Unlock()
 
+	// Format the value to ensure it's a valid hexadecimal address
+	formattedValue := p.Format(value)
+
 	// Check if the peer exists
-	peer, exists := p.Map[value]
+	peer, exists := p.Map[formattedValue]
 	if !exists {
-		peer = &Peer{}
-		p.Map[value] = peer
+		peer = &Peer{Address: formattedValue}
+		p.Map[formattedValue] = peer
 	}
 
 	// Resolve address for LoopringID's without an address
-	// Update ENS|LoopringENS|LoopringId when the value hasn't been set
 	if peer.Address == "" {
 		p.GetLoopringAddress(peer, value)
 	}
 
+	// Update ENS|LoopringENS|LoopringID when the value hasn't been set
 	if peer.ENS == "" && peer.Address != "" {
 		p.GetENS(peer, peer.Address)
 	}
@@ -106,11 +109,25 @@ func (p *Peers) LoadMap() error {
 		if err := rows.Scan(&address, &ens, &loopringENS, &loopringID); err != nil {
 			return fmt.Errorf("failed to scan row: %w", err)
 		}
-		p.Map[address] = &Peer{
+
+		// Create a Peer object
+		peer := &Peer{
 			Address:     address,
 			ENS:         ens,
 			LoopringENS: loopringENS,
 			LoopringID:  loopringID,
+		}
+
+		// Populate the map with keys for Address, ENS, LoopringENS, and LoopringID
+		p.Map[address] = peer
+		if ens != "" {
+			p.Map[ens] = peer
+		}
+		if loopringENS != "" {
+			p.Map[loopringENS] = peer
+		}
+		if loopringID != "" {
+			p.Map[loopringID] = peer
 		}
 	}
 
@@ -121,8 +138,17 @@ func (p *Peers) SaveMap() error {
 	p.Mu.RLock()
 	defer p.Mu.RUnlock()
 
+	// Use a set to track already saved peers (to avoid duplicates)
+	savedPeers := make(map[string]struct{})
+
 	// Iterate over the map and save each peer
-	for address, peer := range p.Map {
+	for _, peer := range p.Map {
+		// Skip if the peer has already been saved
+		if _, exists := savedPeers[peer.Address]; exists {
+			continue
+		}
+
+		// Save the peer to the database
 		query := `
         INSERT INTO peers (address, ens, loopring_ens, loopring_id)
         VALUES ($1, $2, $3, $4)
@@ -131,10 +157,13 @@ func (p *Peers) SaveMap() error {
             loopring_ens = EXCLUDED.loopring_ens,
             loopring_id = EXCLUDED.loopring_id
         `
-		_, err := p.Db.Exec(query, address, peer.ENS, peer.LoopringENS, peer.LoopringID)
+		_, err := p.Db.Exec(query, peer.Address, peer.ENS, peer.LoopringENS, peer.LoopringID)
 		if err != nil {
-			return fmt.Errorf("failed to save peer with address %s: %w", address, err)
+			return fmt.Errorf("failed to save peer with address %s: %w", peer.Address, err)
 		}
+
+		// Mark the peer as saved
+		savedPeers[peer.Address] = struct{}{}
 	}
 
 	return nil
@@ -173,10 +202,10 @@ func (p *Peers) CreateTable() error {
 func (p *Peers) Format(address string) string {
 	// Format Ethereum addresses
 	if strings.HasPrefix(address, "0x") {
-		return "0x" + strings.ToUpper(address[2:])
+		return "0x" + strings.ToLower(address[2:])
 	}
 
-	//  Format ENS names to lowercase
+	// Format ENS names to lowercase
 	if strings.HasSuffix(address, ".eth") {
 		return strings.ToLower(address)
 	}

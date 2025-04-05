@@ -1,12 +1,14 @@
 package fx
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -16,6 +18,7 @@ import (
 type Peers struct {
 	Json           *JSON
 	Eth            *ethclient.Client
+	Db             *Database
 	LoopringApiKey string
 	Map            map[string]*Peer
 	Mu             sync.RWMutex
@@ -28,13 +31,31 @@ type Peer struct {
 	LoopringID  string
 }
 
-func NewPeers(json *JSON, eth *ethclient.Client) *Peers {
-	return &Peers{
+func NewPeers(json *JSON, eth *ethclient.Client, db *Database) *Peers {
+	peers := &Peers{
 		Json:           json,
 		Eth:            eth,
 		LoopringApiKey: os.Getenv("LOOPRING_API_KEY"),
 		Map:            make(map[string]*Peer),
+		Db:             db,
 	}
+
+	// Ensure the peers table exists
+	if err := peers.CreateTable(); err != nil {
+		fmt.Printf("Error ensuring peers table exists: %v\n", err)
+	}
+
+	// Try to load the map from the database
+	if err := peers.LoadMap(); err != nil {
+		fmt.Printf("Error loading map from database: %v\n", err)
+	} else {
+		fmt.Println("Map loaded successfully from the database.")
+	}
+
+	// Start periodic checkpointing to save the map to the database
+	peers.Checkpoint(20) // Save every 60 seconds
+
+	return peers
 }
 
 func (p *Peers) HelloUniverse(value string) {
@@ -65,6 +86,84 @@ func (p *Peers) HelloUniverse(value string) {
 	if peer.LoopringID == "" && peer.Address != "" {
 		p.GetLoopringID(peer, peer.Address)
 	}
+}
+
+func (p *Peers) LoadMap() error {
+	p.Mu.Lock()
+	defer p.Mu.Unlock()
+
+	// Query the map data from the database
+	query := `SELECT data FROM peers ORDER BY updated_at DESC LIMIT 1`
+	var jsonData []byte
+	err := p.Db.QueryRow(query).Scan(&jsonData)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// No data in the database, initialize an empty map
+			p.Map = make(map[string]*Peer)
+			return nil
+		}
+		return fmt.Errorf("failed to load map from database: %w", err)
+	}
+
+	// Deserialize the JSON data into the map
+	err = json.Unmarshal(jsonData, &p.Map)
+	if err != nil {
+		return fmt.Errorf("failed to deserialize map: %w", err)
+	}
+
+	return nil
+}
+
+func (p *Peers) SaveMap() error {
+	p.Mu.RLock()
+	defer p.Mu.RUnlock()
+
+	jsonData, err := json.Marshal(p.Map)
+	if err != nil {
+		return fmt.Errorf("failed to serialize map: %w", err)
+	}
+
+	// Insert or update the map in the database
+	query := `
+        INSERT INTO peers (data, updated_at)
+        VALUES ($1, NOW())
+        ON CONFLICT (id) DO UPDATE
+        SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at
+    `
+	_, err = p.Db.Exec(query, jsonData)
+	if err != nil {
+		return fmt.Errorf("failed to save map to database: %w", err)
+	}
+
+	return nil
+}
+
+func (p *Peers) Checkpoint(intervalSeconds int) {
+	ticker := time.NewTicker(time.Duration(intervalSeconds) * time.Second)
+	go func() {
+		for range ticker.C {
+			err := p.SaveMap()
+			if err != nil {
+				fmt.Printf("Failed to save map to database: %v\n", err)
+			} else {
+				fmt.Println("Map saved to database successfully.")
+			}
+		}
+	}()
+}
+
+func (p *Peers) CreateTable() error {
+	query := `
+    CREATE TABLE IF NOT EXISTS peers (
+        id SERIAL PRIMARY KEY,
+        data JSONB NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`
+	_, err := p.Db.Exec(query)
+	if err != nil {
+		return fmt.Errorf("failed to create peers table: %w", err)
+	}
+	return nil
 }
 
 // Uniform

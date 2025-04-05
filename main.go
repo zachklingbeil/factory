@@ -30,7 +30,7 @@ func NewFactory(dbName string) (*Factory, error) {
 	json := fx.Json(*http, ctx)
 	rpc, eth, _ := fx.Node(ctx)
 	db, _ := fx.NewDatabase(dbName)
-	peer := fx.NewPeers(json, eth)
+	peer := fx.NewPeers(json, eth, db)
 
 	factory := &Factory{
 		Rpc:  rpc,

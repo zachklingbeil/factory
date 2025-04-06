@@ -75,3 +75,18 @@ func (p *Peers) GetLoopringAddress(peer *Peer, id string) {
 		peer.Address = p.Format(response.Address)
 	}
 }
+
+func (p *Peers) NeedsAddress(id string) string {
+	accountID, err := strconv.Atoi(id)
+	if err != nil {
+		return ""
+	}
+	url := fmt.Sprintf("https://api3.loopring.io/api/v3/account?accountId=%d", accountID)
+	var response struct {
+		Address string `json:"owner"`
+	}
+	if data, err := p.Json.In(url, os.Getenv("LOOPRING_API_KEY")); err == nil && json.Unmarshal(data, &response) == nil {
+		return p.Format(response.Address)
+	}
+	return ""
+}

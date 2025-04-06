@@ -79,14 +79,18 @@ func (p *Peers) getOrCreatePeer(value string) *Peer {
 	return peer
 }
 
-func (p *Peers) BatchCreatePeers(addresses []string) {
+func (p *Peers) BatchCreatePeers(addresses []string) []string {
 	p.Mu.Lock()
 	defer p.Mu.Unlock()
+
+	var peers []string
 
 	for _, address := range addresses {
 		formattedAddress := p.Format(address)
 		if _, exists := p.Map[formattedAddress]; !exists {
 			p.Map[formattedAddress] = &Peer{Address: formattedAddress}
+			peers = append(peers, formattedAddress)
 		}
 	}
+	return peers
 }

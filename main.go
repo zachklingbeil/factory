@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	_ "github.com/lib/pq"
 	"github.com/zachklingbeil/factory/fx"
+	"github.com/zachklingbeil/factory/fx/peer"
 )
 
 type Factory struct {
@@ -19,7 +20,7 @@ type Factory struct {
 	Http *http.Client
 	Rpc  *rpc.Client
 	Json *fx.JSON
-	Peer *fx.Peers
+	Peer *peer.Peers
 	Mu   sync.Mutex
 }
 
@@ -30,7 +31,7 @@ func NewFactory(dbName string) (*Factory, error) {
 	json := fx.Json(*http, ctx)
 	rpc, eth, _ := fx.Node(ctx)
 	db, _ := fx.NewDatabase(dbName)
-	peer := fx.NewPeers(json, eth, db)
+	peer := peer.NewPeers(json, eth, db)
 
 	factory := &Factory{
 		Rpc:  rpc,

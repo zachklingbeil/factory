@@ -44,14 +44,8 @@ func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
 		fmt.Printf("Error loading map from database: %v\n", err)
 	} else {
 		fmt.Println("Map loaded successfully from the database.")
-
-		// Start Checkpoint in a separate goroutine
-		go peers.Checkpoint(30) // Periodic saves start immediately
-
-		// Start HelloUniverse in a separate goroutine
-		go peers.HelloUniverse()
+		peers.Checkpoint(30) // Periodic saves start immediately
 	}
-
 	return peers
 }
 

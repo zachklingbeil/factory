@@ -88,7 +88,7 @@ func (d *Database) ColumnToSlice(table string, column string, result any) error 
 	}
 	defer rows.Close()
 
-	slice := make([]any, 0, 10000) // Preallocate a slice with an initial capacity
+	slice := make([]any, 0, 250000) // Preallocate a slice with an initial capacity
 	for rows.Next() {
 		var value any
 		if err := rows.Scan(&value); err != nil {

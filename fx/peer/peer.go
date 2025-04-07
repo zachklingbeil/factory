@@ -35,8 +35,6 @@ func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
 		Addresses:      make([]string, 250000),
 		Db:             db,
 	}
-
-	peers.InitPeers()
 	return peers
 }
 

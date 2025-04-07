@@ -136,7 +136,7 @@ func (p *Peers) LoadMap() error {
 			p.Map[peer.LoopringID] = &peer
 		}
 	}
-
+	p.SaveMap()
 	return nil
 }
 

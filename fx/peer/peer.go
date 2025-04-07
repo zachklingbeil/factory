@@ -44,53 +44,45 @@ func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
 		fmt.Println("Map loaded successfully from the database.")
 	}
 
-	go peers.Checkpoint(20)
+	go peers.Checkpoint(60)
 	return peers
 }
 
-func (p *Peers) HelloUniverse(value string) {
-	p.Mu.Lock()
-	defer p.Mu.Unlock()
-
-	formattedValue := p.Format(value)
-	peer := p.getOrCreatePeer(formattedValue)
-
-	if peer.Address == "" {
-		p.GetLoopringAddress(peer, value)
+func (p *Peers) HelloUniverse(value any) {
+	var addresses []string
+	switch v := value.(type) {
+	case string:
+		addresses = []string{v}
+	case []string:
+		addresses = v
+	default:
+		fmt.Println("Invalid input type for HelloUniverse")
+		return
 	}
-	if peer.ENS == "" {
-		p.GetENS(peer, peer.Address)
-	}
-	if peer.LoopringENS == "" {
-		p.GetLoopringENS(peer, peer.Address)
-	}
-	if peer.LoopringID == "" {
-		p.GetLoopringID(peer, peer.Address)
-	}
+	p.HelloPeers(addresses)
 }
 
-func (p *Peers) getOrCreatePeer(value string) *Peer {
-	if peer, exists := p.Map[value]; exists {
-		return peer
-	}
-
-	peer := &Peer{Address: value}
-	p.Map[value] = peer
-	return peer
-}
-
-func (p *Peers) BatchCreatePeers(addresses []string) []string {
+func (p *Peers) HelloPeers(addresses []string) {
 	p.Mu.Lock()
 	defer p.Mu.Unlock()
-
-	var peers []string
 
 	for _, address := range addresses {
-		formattedAddress := p.Format(address)
-		if _, exists := p.Map[formattedAddress]; !exists {
-			p.Map[formattedAddress] = &Peer{Address: formattedAddress}
-			peers = append(peers, formattedAddress)
+		value := p.Format(address)
+
+		peer, exists := p.Map[value]
+		if !exists {
+			peer = &Peer{Address: value}
+			p.Map[value] = peer
+		}
+
+		if peer.ENS == "" {
+			p.GetENS(peer, peer.Address)
+		}
+		if peer.LoopringENS == "" {
+			p.GetLoopringENS(peer, peer.Address)
+		}
+		if peer.LoopringID == "" {
+			p.GetLoopringID(peer, peer.Address)
 		}
 	}
-	return peers
 }

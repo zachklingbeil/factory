@@ -11,45 +11,6 @@ import (
 	"github.com/wealdtech/go-ens/v3"
 )
 
-func (p *Peers) HelloUniverse(value any) {
-	var addresses []string
-	switch v := value.(type) {
-	case string:
-		addresses = []string{v}
-	case []string:
-		addresses = v
-	default:
-		fmt.Println("Invalid input type for HelloUniverse")
-		return
-	}
-	p.HelloPeers(addresses)
-}
-
-func (p *Peers) HelloPeers(addresses []string) {
-	p.Mu.Lock()
-	defer p.Mu.Unlock()
-
-	for _, address := range addresses {
-		value := p.Format(address)
-
-		peer, exists := p.Map[value]
-		if !exists {
-			peer = &Peer{Address: value}
-			p.Map[value] = peer
-		}
-
-		if peer.ENS == "" {
-			p.GetENS(peer, peer.Address)
-		}
-		if peer.LoopringENS == "" {
-			p.GetLoopringENS(peer, peer.Address)
-		}
-		if peer.LoopringID == "" {
-			p.GetLoopringID(peer, peer.Address)
-		}
-	}
-}
-
 func (p *Peers) Format(address string) string {
 	if strings.HasPrefix(address, "0x") {
 		return "0x" + strings.ToLower(address[2:])

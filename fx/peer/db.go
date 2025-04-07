@@ -17,49 +17,6 @@ func (p *Peers) CreateTable() error {
 	return err
 }
 
-func (p *Peers) LoadMap() error {
-	p.Mu.Lock()
-	defer p.Mu.Unlock()
-
-	rows, err := p.Db.Query(`SELECT address, ens, loopring_ens, loopring_id FROM peers`)
-	if err != nil {
-		return fmt.Errorf("failed to load peers from database: %w", err)
-	}
-	defer rows.Close()
-
-	incompleteAddresses := make([]string, 0)
-
-	for rows.Next() {
-		var peer Peer
-		if err := rows.Scan(&peer.Address, &peer.ENS, &peer.LoopringENS, &peer.LoopringID); err != nil {
-			return fmt.Errorf("failed to scan row: %w", err)
-		}
-
-		// Add the peer to the map
-		p.Map[peer.Address] = &peer
-		if peer.ENS != "" {
-			p.Map[peer.ENS] = &peer
-		}
-		if peer.LoopringENS != "" {
-			p.Map[peer.LoopringENS] = &peer
-		}
-		if peer.LoopringID != "" {
-			p.Map[peer.LoopringID] = &peer
-		}
-
-		if peer.ENS == "" || peer.LoopringENS == "" || peer.LoopringID == "" {
-			incompleteAddresses = append(incompleteAddresses, peer.Address)
-		}
-	}
-
-	if len(incompleteAddresses) > 0 {
-		fmt.Printf("Found %d peers with incomplete fields. Initializing...\n", len(incompleteAddresses))
-		go p.HelloPeers(incompleteAddresses) // Run HelloPeers in a goroutine for non-blocking behavior
-	}
-
-	return nil
-}
-
 func (p *Peers) SaveMap() error {
 	p.Mu.RLock()
 	defer p.Mu.RUnlock()

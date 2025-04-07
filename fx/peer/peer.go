@@ -42,10 +42,14 @@ func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
 		fmt.Printf("Error loading map from database: %v\n", err)
 	} else {
 		fmt.Println("Map loaded successfully from the database.")
-		peers.HelloUniverse() // Directly handle incomplete addresses
+
+		// Start Checkpoint in a separate goroutine
+		go peers.Checkpoint(60)
+
+		// Start HelloUniverse in a separate goroutine
+		go peers.HelloUniverse()
 	}
 
-	go peers.Checkpoint(60)
 	return peers
 }
 

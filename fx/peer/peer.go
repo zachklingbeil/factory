@@ -1,9 +1,11 @@
 package peer
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/zachklingbeil/factory/fx"
@@ -44,13 +46,27 @@ func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
 		fmt.Println("Map loaded successfully from the database.")
 
 		// Start Checkpoint in a separate goroutine
-		go peers.Checkpoint(60)
+		go peers.Checkpoint(30) // Periodic saves start immediately
 
 		// Start HelloUniverse in a separate goroutine
 		go peers.HelloUniverse()
 	}
 
 	return peers
+}
+
+func (p *Peers) Checkpoint(intervalSeconds int) {
+	ticker := time.NewTicker(time.Duration(intervalSeconds) * time.Second)
+	defer ticker.Stop() // Ensure the ticker is stopped when the function exits
+
+	for range ticker.C {
+		start := time.Now()
+		if err := p.SaveMap(); err != nil {
+			fmt.Printf("Failed to save map to database: %v\n", err)
+		} else {
+			fmt.Printf("Map saved to database successfully in %v.\n", time.Since(start))
+		}
+	}
 }
 
 func (p *Peers) HelloUniverse() {
@@ -127,5 +143,46 @@ func (p *Peers) LoadMap() error {
 		}
 	}
 
+	return nil
+}
+
+func (p *Peers) CreateTable() error {
+	query := `
+    CREATE TABLE IF NOT EXISTS json (
+        timestamp TIMESTAMP PRIMARY KEY,
+    	  data JSONB
+    )`
+	_, err := p.Db.Exec(query)
+	return err
+}
+
+func (p *Peers) SaveMap() error {
+	p.Mu.RLock()
+	defer p.Mu.RUnlock()
+
+	// Serialize the map into JSON
+	peersSlice := make([]Peer, 0, len(p.Map))
+	for _, peer := range p.Map {
+		peersSlice = append(peersSlice, *peer)
+	}
+
+	jsonData, err := json.Marshal(peersSlice)
+	if err != nil {
+		return fmt.Errorf("failed to serialize peers map: %w", err)
+	}
+
+	// Insert the JSON data into the database
+	query := `
+    INSERT INTO json (timestamp, data)
+    VALUES ($1, $2)
+    ON CONFLICT (timestamp) DO UPDATE
+    SET data = EXCLUDED.data
+    `
+	_, err = p.Db.Exec(query, time.Now(), jsonData)
+	if err != nil {
+		return fmt.Errorf("failed to save peers to database: %w", err)
+	}
+
+	fmt.Println("Checkpoint: Map saved to database.")
 	return nil
 }

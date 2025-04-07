@@ -32,17 +32,11 @@ func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
 		Eth:            eth,
 		LoopringApiKey: os.Getenv("LOOPRING_API_KEY"),
 		Map:            make(map[string]*Peer),
+		Addresses:      make([]string, 250000),
 		Db:             db,
 	}
 
-	if err := peers.CreateTable(); err != nil {
-		fmt.Printf("Error ensuring peers table exists: %v\n", err)
-	}
-
-	if err := peers.LoadAddresses(); err != nil {
-		fmt.Printf("Error loading addresses: %v\n", err)
-	}
-
+	peers.InitPeers()
 	return peers
 }
 

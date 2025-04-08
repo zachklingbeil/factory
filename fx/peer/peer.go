@@ -85,11 +85,10 @@ func (p *Peers) LoadUnprocessedAddresses() error {
 	var addresses []string
 	query := `
         SELECT address FROM peers
-        WHERE ens IN ('', '!') OR loopring_ens IN ('', '!') OR loopring_id = -2
     `
 	err := p.Db.ColumnToSlice(query, "address", &addresses)
 	if err != nil {
-		return fmt.Errorf("failed to load unprocessed addresses: %w", err)
+		return fmt.Errorf("failed to load all addresses: %w", err)
 	}
 
 	p.Mu.Lock()

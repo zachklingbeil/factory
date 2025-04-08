@@ -121,7 +121,7 @@ func (p *Peers) SavePeersBatch(peers []*Peer) error {
     `
 
 	// Build the query with placeholders
-	values := []interface{}{}
+	values := []any{}
 	placeholders := ""
 	for i, peer := range peers {
 		if i > 0 {

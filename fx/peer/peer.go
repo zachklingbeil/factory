@@ -83,13 +83,13 @@ func (p *Peers) LoadUnprocessedAddresses() error {
 
 	var addresses []string
 	for address, peer := range p.Map {
-		if peer.ENS == "" || peer.ENS == "!" ||
+		if peer.ENS == "" ||
 			peer.LoopringENS == "" || peer.LoopringENS == "!" ||
 			peer.LoopringID == "" || peer.LoopringID == "!" {
 			addresses = append(addresses, address)
 		}
 	}
-	p.Addresses = addresses // Set the slice with unprocessed addresses
+	p.Addresses = addresses
 	return nil
 }
 

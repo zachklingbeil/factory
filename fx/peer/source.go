@@ -3,7 +3,6 @@ package peer
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -59,7 +58,7 @@ func (p *Peers) GetLoopringID(peer *Peer, address string) {
 	var response struct {
 		ID int64 `json:"accountId"`
 	}
-	data, err := p.Json.In(url, os.Getenv("LOOPRING_API_KEY"))
+	data, err := p.Json.In(url, "")
 	if err != nil || json.Unmarshal(data, &response) != nil || response.ID == 0 {
 		peer.LoopringID = "." // Assign "." for errors or if no Loopring ID is found
 		return
@@ -77,7 +76,7 @@ func (p *Peers) GetLoopringAddress(peer *Peer, id string) {
 	var response struct {
 		Address string `json:"owner"`
 	}
-	if data, err := p.Json.In(url, os.Getenv("LOOPRING_API_KEY")); err == nil && json.Unmarshal(data, &response) == nil {
+	if data, err := p.Json.In(url, ""); err == nil && json.Unmarshal(data, &response) == nil {
 		peer.Address = p.Format(response.Address)
 	} else {
 		peer.Address = "!"

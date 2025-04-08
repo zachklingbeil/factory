@@ -24,7 +24,6 @@ type Factory struct {
 	Mu   sync.Mutex
 }
 
-// NewFactory initializes the Factory with all required components, including the database connection.
 func NewFactory(dbName string) (*Factory, error) {
 	ctx := context.Background()
 	http := &http.Client{}

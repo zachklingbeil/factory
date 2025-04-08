@@ -15,7 +15,7 @@ type Peers struct {
 	Db             *fx.Database
 	LoopringApiKey string
 	Map            map[string]*Peer
-	Addresses      []string // Add a slice to store addresses
+	Addresses      []string
 	Mu             sync.RWMutex
 }
 
@@ -23,7 +23,7 @@ type Peer struct {
 	Address     string
 	ENS         string
 	LoopringENS string
-	LoopringID  string
+	LoopringID  int64
 }
 
 func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
@@ -35,79 +35,57 @@ func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
 		Addresses:      make([]string, 250000),
 		Db:             db,
 	}
+
+	// // Load the entire map first
+	// if err := peers.LoadMap(); err != nil {
+	// 	fmt.Printf("Error loading map: %v\n", err)
+	// }
+
+	// // Then load unprocessed addresses
+	// if err := peers.LoadUnprocessedAddresses(); err != nil {
+	// 	fmt.Printf("Error loading unprocessed addresses: %v\n", err)
+	// }
+
 	return peers
 }
 
-func (p *Peers) InitPeers() error {
-	// Step 1: Fetch all addresses from the old table
-	var addresses []string
-	err := p.Db.ColumnToSlice("peers2", "address", &addresses) // Replace "peers2" with the old table name
-	if err != nil {
-		return fmt.Errorf("failed to load addresses from old table: %w", err)
-	}
-
-	// Step 2: Create the new peers table
+func (p *Peers) LoadMap() error {
 	query := `
-    CREATE TABLE IF NOT EXISTS peers (
-        address TEXT PRIMARY KEY,
-        ens TEXT,
-        loopring_ens TEXT,
-        loopring_id TEXT
-    )`
-	if _, err := p.Db.Exec(query); err != nil {
-		return fmt.Errorf("failed to create new peers table: %w", err)
-	}
-
-	// Step 3: Insert all peers with only the address field in a single transaction
-	tx, err := p.Db.Begin()
+        SELECT address, ens, loopring_ens, loopring_id FROM peers
+    `
+	rows, err := p.Db.Query(query)
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return fmt.Errorf("failed to load peers from database: %w", err)
 	}
+	defer rows.Close()
+	p.Mu.Lock()
+	defer p.Mu.Unlock()
 
-	stmt, err := tx.Prepare(`
-    INSERT INTO peers (address, ens, loopring_ens, loopring_id)
-    VALUES ($1, NULL, NULL, NULL)
-    ON CONFLICT (address) DO NOTHING
-    `)
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed to prepare statement: %w", err)
-	}
-	defer stmt.Close()
-
-	for _, address := range addresses {
-		if _, err := stmt.Exec(address); err != nil {
-			tx.Rollback()
-			return fmt.Errorf("failed to insert peer with address %s: %w", address, err)
+	for rows.Next() {
+		var peer Peer
+		if err := rows.Scan(&peer.Address, &peer.ENS, &peer.LoopringENS, &peer.LoopringID); err != nil {
+			return fmt.Errorf("failed to scan peer row: %w", err)
 		}
+		p.Map[peer.Address] = &peer
 	}
 
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("error iterating over peer rows: %w", err)
 	}
 
-	fmt.Printf("Successfully initialized %d peers with addresses only.\n", len(addresses))
+	fmt.Printf("Loaded %d peers into the map.\n", len(p.Map))
 	return nil
 }
 
-func (p *Peers) CreateTable() error {
-	query := `
-    CREATE TABLE IF NOT EXISTS peers (
-        address TEXT PRIMARY KEY,
-        ens TEXT,
-        loopring_ens TEXT,
-        loopring_id TEXT
-    )`
-	_, err := p.Db.Exec(query)
-	return err
-}
-
-// LoadAddresses fetches all addresses from the peers table and stores them in the Peers struct
-func (p *Peers) LoadAddresses() error {
+func (p *Peers) LoadUnprocessedAddresses() error {
 	var addresses []string
-	err := p.Db.ColumnToSlice("peers2", "address", &addresses)
+	query := `
+        SELECT address FROM peers
+        WHERE ens IN ('', '!') OR loopring_ens IN ('', '!') OR loopring_id IS NULL OR loopring_id = -2
+    `
+	err := p.Db.ColumnToSlice(query, "address", &addresses)
 	if err != nil {
-		return fmt.Errorf("failed to load addresses: %w", err)
+		return fmt.Errorf("failed to load unprocessed addresses: %w", err)
 	}
 
 	p.Mu.Lock()
@@ -115,133 +93,6 @@ func (p *Peers) LoadAddresses() error {
 	p.Addresses = addresses
 	return nil
 }
-
-func (p *Peers) HelloUniverse() {
-	p.Mu.Lock()
-	defer p.Mu.Unlock()
-
-	for _, address := range p.Addresses {
-		value := p.Format(address)
-
-		peer, exists := p.Map[value]
-		if !exists {
-			peer = &Peer{Address: value}
-			p.Map[value] = peer
-		}
-
-		// Save the peer with just the address
-		if err := p.SavePeer(peer); err != nil {
-			fmt.Printf("Error saving peer %s: %v\n", peer.Address, err)
-		}
-	}
-	fmt.Printf("Finished creating peers with addresses.\n")
-
-	// Step 2: Process peers for ENS, LoopringENS, and LoopringID
-	fmt.Printf("Processing peers for ENS, LoopringENS, and LoopringID...\n")
-	work := len(p.Addresses) // Track the number of addresses
-	fmt.Printf("%d peers to process\n", work)
-
-	for _, address := range p.Addresses {
-		value := p.Format(address)
-
-		peer, exists := p.Map[value]
-		if !exists {
-			fmt.Printf("Peer not found in map for address: %s\n", address)
-			continue
-		}
-
-		// Populate missing fields for the peer
-		if peer.ENS == "" {
-			p.GetENS(peer, peer.Address)
-			if peer.ENS == "" {
-				peer.ENS = "."
-			}
-		}
-		if peer.LoopringENS == "" {
-			p.GetLoopringENS(peer, peer.Address)
-			if peer.LoopringENS == "" {
-				peer.LoopringENS = "."
-			}
-		}
-		if peer.LoopringID == "" {
-			p.GetLoopringID(peer, peer.Address)
-			if peer.LoopringID == "" {
-				peer.LoopringID = "."
-			}
-		}
-
-		// Save the updated peer
-		if err := p.SavePeer(peer); err != nil {
-			fmt.Printf("Error saving peer %s: %v\n", peer.Address, err)
-		}
-
-		work--
-		fmt.Printf("%d peers remaining\n", work)
-	}
-	fmt.Printf("Finished processing peers.\n")
-}
-
-// func (p *Peers) LoadUnprocessedAddresses() error {
-// 	var addresses []string
-// 	query := `
-//         SELECT address FROM peers
-//         WHERE ens IS NULL OR loopring_ens IS NULL OR loopring_id IS NULL
-//     `
-// 	err := p.Db.ColumnToSlice(query, "address", &addresses)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to load unprocessed addresses: %w", err)
-// 	}
-
-// 	p.Mu.Lock()
-// 	defer p.Mu.Unlock()
-// 	p.Addresses = addresses
-// 	return nil
-// }
-
-// func (p *Peers) HelloUniverse() {
-// 	p.Mu.Lock()
-// 	defer p.Mu.Unlock()
-
-// 	// Iterate over all addresses in p.Addresses
-// 	work := len(p.Addresses) // Track the number of addresses
-// 	fmt.Printf("%d\n", work)
-
-// 	for _, address := range p.Addresses {
-// 		value := p.Format(address)
-
-// 		peer, exists := p.Map[value]
-// 		if !exists {
-// 			peer = &Peer{Address: value}
-// 			p.Map[value] = peer
-// 		}
-
-// 		// Populate missing fields for the peer
-// 		if peer.ENS == "" {
-// 			p.GetENS(peer, peer.Address)
-// 			if peer.ENS == "" {
-// 				peer.ENS = "."
-// 			}
-// 		}
-// 		if peer.LoopringENS == "" {
-// 			p.GetLoopringENS(peer, peer.Address)
-// 			if peer.LoopringENS == "" {
-// 				peer.LoopringENS = "."
-// 			}
-// 		}
-// 		if peer.LoopringID == "" {
-// 			p.GetLoopringID(peer, peer.Address)
-// 			if peer.LoopringID == "" {
-// 				peer.LoopringID = "."
-// 			}
-// 		}
-// 		if err := p.SavePeer(peer); err != nil {
-// 			fmt.Printf("Error saving peer %s: %v\n", peer.Address, err)
-// 		}
-
-// 		work--
-// 		fmt.Printf("%d\n", work)
-// 	}
-// }
 
 func (p *Peers) SavePeer(peer *Peer) error {
 	query := `
@@ -257,4 +108,42 @@ func (p *Peers) SavePeer(peer *Peer) error {
 		return fmt.Errorf("failed to save peer %s: %w", peer.Address, err)
 	}
 	return nil
+}
+
+func (p *Peers) HelloUniverse() {
+	p.Mu.Lock()
+	defer p.Mu.Unlock()
+
+	peers := len(p.Addresses)
+	fmt.Printf("%d peers to process\n", peers)
+
+	for _, address := range p.Addresses {
+		peer, exists := p.Map[address]
+		if !exists {
+			fmt.Printf("Warning: Address %s not found in Map\n", address)
+			continue
+		}
+
+		// Populate missing fields for the peer
+		if peer.ENS == "" || peer.ENS == "!" {
+			p.GetENS(peer, peer.Address)
+		}
+		if peer.LoopringENS == "" || peer.LoopringENS == "!" {
+			p.GetLoopringENS(peer, peer.Address)
+		}
+		if peer.LoopringID == -1 || peer.LoopringID == -2 {
+			p.GetLoopringID(peer, peer.Address)
+		}
+
+		// Save the updated peer to the database
+		if err := p.SavePeer(peer); err != nil {
+			fmt.Printf("Error saving peer %s: %v\n", peer.Address, err)
+		}
+
+		// Update progress
+		peers--
+		fmt.Printf("%d\n", peers)
+	}
+
+	fmt.Println("Hello Universe")
 }

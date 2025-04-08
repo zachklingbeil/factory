@@ -36,6 +36,8 @@ func (p *Peers) GetENS(peer *Peer, address string) {
 	addr := common.HexToAddress(address)
 	if ensName, err := ens.ReverseResolve(p.Eth, addr); err == nil {
 		peer.ENS = p.Format(ensName)
+	} else {
+		peer.ENS = "!" // Assign "!" if there is an error
 	}
 }
 
@@ -46,7 +48,13 @@ func (p *Peers) GetLoopringENS(peer *Peer, address string) {
 		Loopring string `json:"data"`
 	}
 	if data, err := p.Json.In(url, ""); err == nil && json.Unmarshal(data, &response) == nil {
-		peer.LoopringENS = p.Format(response.Loopring)
+		if response.Loopring == "" {
+			peer.LoopringENS = "."
+		} else {
+			peer.LoopringENS = p.Format(response.Loopring)
+		}
+	} else {
+		peer.LoopringENS = "!"
 	}
 }
 
@@ -57,7 +65,13 @@ func (p *Peers) GetLoopringID(peer *Peer, address string) {
 		ID int64 `json:"accountId"`
 	}
 	if data, err := p.Json.In(url, os.Getenv("LOOPRING_API_KEY")); err == nil && json.Unmarshal(data, &response) == nil {
-		peer.LoopringID = strconv.FormatInt(response.ID, 10)
+		if response.ID == 0 {
+			peer.LoopringID = -1 // Use -1 to indicate no LoopringID
+		} else {
+			peer.LoopringID = response.ID
+		}
+	} else {
+		peer.LoopringID = -2 // Use -2 to indicate an error
 	}
 }
 
@@ -73,20 +87,7 @@ func (p *Peers) GetLoopringAddress(peer *Peer, id string) {
 	}
 	if data, err := p.Json.In(url, os.Getenv("LOOPRING_API_KEY")); err == nil && json.Unmarshal(data, &response) == nil {
 		peer.Address = p.Format(response.Address)
+	} else {
+		peer.Address = "!"
 	}
-}
-
-func (p *Peers) NeedsAddress(id string) string {
-	accountID, err := strconv.Atoi(id)
-	if err != nil {
-		return ""
-	}
-	url := fmt.Sprintf("https://api3.loopring.io/api/v3/account?accountId=%d", accountID)
-	var response struct {
-		Address string `json:"owner"`
-	}
-	if data, err := p.Json.In(url, os.Getenv("LOOPRING_API_KEY")); err == nil && json.Unmarshal(data, &response) == nil {
-		return p.Format(response.Address)
-	}
-	return ""
 }

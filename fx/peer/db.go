@@ -1,5 +1,7 @@
 package peer
 
+import "fmt"
+
 // import (
 // 	"encoding/json"
 // 	"fmt"
@@ -180,3 +182,54 @@ package peer
 // 	fmt.Println("Checkpoint: Map saved to database.")
 // 	return nil
 // }
+
+func (p *Peers) InitPeers() error {
+	var addresses []string
+	err := p.Db.ColumnToSlice("peers2", "address", &addresses) // Replace "peers2" with the old table name
+	if err != nil {
+		return fmt.Errorf("failed to load addresses from old table: %w", err)
+	}
+
+	// Step 2: Create the new peers table
+	query := `
+    CREATE TABLE IF NOT EXISTS peers (
+        address TEXT PRIMARY KEY,
+        ens TEXT,
+        loopring_ens TEXT,
+        loopring_id INTEGER
+    )`
+	if _, err := p.Db.Exec(query); err != nil {
+		return fmt.Errorf("failed to create new peers table: %w", err)
+	}
+
+	// Step 3: Insert all peers with only the address field in a single transaction
+	tx, err := p.Db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	stmt, err := tx.Prepare(`
+    INSERT INTO peers (address, ens, loopring_ens, loopring_id)
+    VALUES ($1, NULL, NULL, NULL)
+    ON CONFLICT (address) DO NOTHING
+    `)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	for _, address := range addresses {
+		if _, err := stmt.Exec(address); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to insert peer with address %s: %w", address, err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	fmt.Printf("Successfully initialized %d peers with addresses only.\n", len(addresses))
+	return nil
+}

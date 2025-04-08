@@ -89,9 +89,7 @@ func (p *Peers) LoadUnprocessedAddresses() error {
 			addresses = append(addresses, address)
 		}
 	}
-
 	p.Addresses = addresses // Set the slice with unprocessed addresses
-	fmt.Printf("peers to process %d\n", len(p.Addresses))
 	return nil
 }
 
@@ -174,7 +172,7 @@ func (p *Peers) HelloUniverse() {
 		}
 
 		// Update progress and print details
-		fmt.Printf("%d | %s %s %s %s\n", peers, peer.ENS, peer.LoopringENS, peer.LoopringID, peer.Address)
+		fmt.Printf("%d | %s %s %s\n", peers, peer.ENS, peer.LoopringENS, peer.LoopringID)
 		peers--
 	}
 

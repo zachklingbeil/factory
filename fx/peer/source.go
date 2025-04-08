@@ -34,20 +34,10 @@ func (p *Peers) GetAddress(peer *Peer, dotEth string) {
 // hex -> ENS [.eth]
 func (p *Peers) GetENS(peer *Peer, address string) {
 	addr := common.HexToAddress(address)
-	ensName, err := ens.ReverseResolve(p.Eth, addr)
-	if err != nil {
-		if err.Error() == "name not found" { // Distinguish "name not found" error
-			peer.ENS = "." // addresses without an ENS
-		} else {
-			peer.ENS = "!" // for errors
-		}
-		return
-	}
-	// no error, no ens
-	if ensName == "" {
-		peer.ENS = "."
+	if ensName, err := ens.ReverseResolve(p.Eth, addr); err != nil || ensName == "" {
+		peer.ENS = "." // Assign "." for errors or if no ENS name is found
 	} else {
-		peer.ENS = p.Format(ensName)
+		peer.ENS = p.Format(ensName) // Assign the resolved ENS name
 	}
 }
 

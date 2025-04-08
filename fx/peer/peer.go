@@ -147,7 +147,7 @@ func (p *Peers) HelloUniverse() {
 	peers := len(p.Addresses) // Use the actual length of the slice
 	fmt.Printf("%d peers to process\n", peers)
 
-	batchSize := 100 // Define the batch size
+	batchSize := 1000 // Define the batch size
 	var batch []*Peer
 
 	for _, address := range p.Addresses {

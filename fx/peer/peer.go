@@ -47,6 +47,11 @@ func (p *Peers) HelloUniverse() {
 	var batch []*Peer
 
 	for {
+		p.Mu.RLock()
+		peers := len(p.Addresses)
+		p.Mu.RUnlock()
+		fmt.Printf("%d peers to process\n", peers)
+
 		if len(batch) > 0 {
 			if err := p.SavePeers(batch); err != nil {
 				fmt.Printf("Error saving final batch: %v\n", err)
@@ -69,6 +74,9 @@ func (p *Peers) HelloUniverse() {
 
 		batch = append(batch, peer)
 
+		fmt.Printf("%d %s %s %s\n", peers, peer.ENS, peer.LoopringENS, peer.LoopringID)
+		peers--
+
 		if len(batch) >= batchSize {
 			if err := p.SavePeers(batch); err != nil {
 				fmt.Printf("Error saving batch: %v\n", err)
@@ -80,13 +88,16 @@ func (p *Peers) HelloUniverse() {
 				fmt.Printf("Error saving final batch: %v\n", err)
 			}
 		}
+		fmt.Println("Hello Universe")
 	}
 }
 
-// NewBlock sends addresses through the channel, updates p.Addresses for new peers.
 func (p *Peers) NewBlock(addresses []string) {
 	p.Mu.Lock()
 	defer p.Mu.Unlock()
+
+	peers := len(addresses)
+	fmt.Printf("%d peers to process\n", peers)
 
 	for _, address := range addresses {
 		if _, exists := p.Map[address]; !exists {

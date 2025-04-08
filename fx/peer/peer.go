@@ -172,7 +172,7 @@ func (p *Peers) HelloUniverse() {
 		}
 
 		// Update progress and print details
-		fmt.Printf("%d | %s %s %s\n", peers, peer.ENS, peer.LoopringENS, peer.LoopringID)
+		fmt.Printf("%d %s %s %s\n", peers, peer.ENS, peer.LoopringENS, peer.LoopringID)
 		peers--
 	}
 

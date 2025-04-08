@@ -36,19 +36,15 @@ func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
 		Db:             db,
 	}
 
-	if err := peers.InitPeers(); err != nil {
-		fmt.Printf("Error initializing peers: %v\n", err)
+	// Load the entire map first
+	if err := peers.LoadMap(); err != nil {
+		fmt.Printf("Error loading map: %v\n", err)
 	}
 
-	// // Load the entire map first
-	// if err := peers.LoadMap(); err != nil {
-	// 	fmt.Printf("Error loading map: %v\n", err)
-	// }
-
-	// // Then load unprocessed addresses
-	// if err := peers.LoadUnprocessedAddresses(); err != nil {
-	// 	fmt.Printf("Error loading unprocessed addresses: %v\n", err)
-	// }
+	// Then load unprocessed addresses
+	if err := peers.LoadUnprocessedAddresses(); err != nil {
+		fmt.Printf("Error loading unprocessed addresses: %v\n", err)
+	}
 
 	return peers
 }
@@ -82,19 +78,20 @@ func (p *Peers) LoadMap() error {
 }
 
 func (p *Peers) LoadUnprocessedAddresses() error {
-	var addresses []string
-	query := `
-        SELECT address FROM peers
-        WHERE ens IN ('', '!') OR loopring_ens IN ('', '!') OR loopring_id IN ('', '!')
-    `
-	err := p.Db.ColumnToSlice(query, "address", &addresses)
-	if err != nil {
-		return fmt.Errorf("failed to load unprocessed addresses: %w", err)
-	}
-
 	p.Mu.Lock()
 	defer p.Mu.Unlock()
-	p.Addresses = addresses // Dynamically set the slice
+
+	var addresses []string
+	for address, peer := range p.Map {
+		if peer.ENS == "" || peer.ENS == "!" ||
+			peer.LoopringENS == "" || peer.LoopringENS == "!" ||
+			peer.LoopringID == "" || peer.LoopringID == "!" {
+			addresses = append(addresses, address)
+		}
+	}
+
+	p.Addresses = addresses // Set the slice with unprocessed addresses
+	fmt.Printf("Loaded %d unprocessed addresses.\n", len(p.Addresses))
 	return nil
 }
 
@@ -122,22 +119,12 @@ func (p *Peers) HelloUniverse() {
 	fmt.Printf("%d peers to process\n", peers)
 
 	for _, address := range p.Addresses {
-		peer, exists := p.Map[address]
-		if !exists {
-			fmt.Printf("Warning: Address %s not found in Map\n", address)
-			continue
-		}
+		peer := p.Map[address] // No need to check existence; LoadUnprocessedAddresses ensures validity
 
 		// Populate missing fields for the peer
-		if peer.ENS == "" || peer.ENS == "!" {
-			p.GetENS(peer, peer.Address)
-		}
-		if peer.LoopringENS == "" || peer.LoopringENS == "!" {
-			p.GetLoopringENS(peer, peer.Address)
-		}
-		if peer.LoopringID == "" || peer.LoopringID == "!" {
-			p.GetLoopringID(peer, peer.Address)
-		}
+		p.GetENS(peer, peer.Address)
+		p.GetLoopringENS(peer, peer.Address)
+		p.GetLoopringID(peer, peer.Address)
 
 		// Save the updated peer to the database
 		if err := p.SavePeer(peer); err != nil {

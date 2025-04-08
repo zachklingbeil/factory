@@ -39,7 +39,6 @@ func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
 		fmt.Printf("Error loading peers: %v\n", err)
 	}
 
-	go peers.HelloUniverse()
 	return peers
 }
 
@@ -59,13 +58,10 @@ func (p *Peers) HelloUniverse() {
 			}
 			batch = batch[:0]
 		}
+
 		address := <-p.PeerChan
 
 		p.Mu.Lock()
-		if _, exists := p.Map[address]; !exists {
-			p.Map[address] = &Peer{Address: address}
-			p.Addresses = append(p.Addresses, address)
-		}
 		peer := p.Map[address]
 		p.Mu.Unlock()
 
@@ -104,8 +100,10 @@ func (p *Peers) NewBlock(addresses []string) {
 		if _, exists := p.Map[address]; !exists {
 			p.Map[address] = &Peer{Address: address}
 			p.Addresses = append(p.Addresses, address)
-			fmt.Printf("Sending address to PeerChan: %s\n", address) // Debug log
-			p.PeerChan <- address
 		}
+
+		// Send the address to the channel and process it immediately
+		fmt.Printf("Sending address to PeerChan: %s\n", address) // Debug log
+		p.PeerChan <- address
 	}
 }

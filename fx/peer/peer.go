@@ -110,13 +110,46 @@ func (p *Peers) SavePeer(peer *Peer) error {
 	}
 	return nil
 }
+func (p *Peers) SavePeersBatch(peers []*Peer) error {
+	query := `
+    INSERT INTO peers (address, ens, loopring_ens, loopring_id)
+    VALUES %s
+    ON CONFLICT (address) DO UPDATE SET
+        ens = EXCLUDED.ens,
+        loopring_ens = EXCLUDED.loopring_ens,
+        loopring_id = EXCLUDED.loopring_id
+    `
 
+	// Build the query with placeholders
+	values := []interface{}{}
+	placeholders := ""
+	for i, peer := range peers {
+		if i > 0 {
+			placeholders += ", "
+		}
+		placeholders += fmt.Sprintf("($%d, $%d, $%d, $%d)", i*4+1, i*4+2, i*4+3, i*4+4)
+		values = append(values, peer.Address, peer.ENS, peer.LoopringENS, peer.LoopringID)
+	}
+
+	// Format the query with the placeholders
+	query = fmt.Sprintf(query, placeholders)
+
+	// Execute the batch insert
+	_, err := p.Db.Exec(query, values...)
+	if err != nil {
+		return fmt.Errorf("failed to save peers batch: %w", err)
+	}
+	return nil
+}
 func (p *Peers) HelloUniverse() {
 	p.Mu.Lock()
 	defer p.Mu.Unlock()
 
 	peers := len(p.Addresses) // Use the actual length of the slice
 	fmt.Printf("%d peers to process\n", peers)
+
+	batchSize := 1000 // Define the batch size
+	var batch []*Peer
 
 	for _, address := range p.Addresses {
 		peer := p.Map[address] // No need to check existence; LoadUnprocessedAddresses ensures validity
@@ -126,14 +159,27 @@ func (p *Peers) HelloUniverse() {
 		p.GetLoopringENS(peer, peer.Address)
 		p.GetLoopringID(peer, peer.Address)
 
-		// Save the updated peer to the database
-		if err := p.SavePeer(peer); err != nil {
-			fmt.Printf("Error saving peer %s: %v\n", peer.Address, err)
+		// Add the peer to the batch
+		batch = append(batch, peer)
+
+		// If the batch size is reached, execute the batch insert
+		if len(batch) >= batchSize {
+			if err := p.SavePeersBatch(batch); err != nil {
+				fmt.Printf("Error saving batch: %v\n", err)
+			}
+			batch = batch[:0] // Clear the batch
 		}
 
 		// Update progress and print details
 		fmt.Printf("%d | %s %s %s\n", peers, peer.ENS, peer.LoopringENS, peer.LoopringID)
 		peers--
+	}
+
+	// Insert any remaining peers in the batch
+	if len(batch) > 0 {
+		if err := p.SavePeersBatch(batch); err != nil {
+			fmt.Printf("Error saving final batch: %v\n", err)
+		}
 	}
 
 	fmt.Println("Hello Universe")

@@ -29,7 +29,10 @@ func NewFactory(dbName string) (*Factory, error) {
 	ctx := context.Background()
 	http := &http.Client{}
 	json := fx.Json(*http, ctx)
-	rpc, eth, _ := fx.Node(ctx)
+	rpc, eth, err := fx.Node(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Ethereum node: %w", err)
+	}
 	db, _ := fx.NewDatabase(dbName)
 	peer := peer.NewPeers(json, eth, db)
 
@@ -42,7 +45,7 @@ func NewFactory(dbName string) (*Factory, error) {
 		Db:   db,
 		Peer: peer,
 	}
-	fmt.Printf("- Initialized Ethereum RPC (ipc), http, json, and peers\n")
-	fmt.Printf("- Database: %s\n", dbName)
+
+	fmt.Printf("factory [ %s ]\n", dbName)
 	return factory, nil
 }

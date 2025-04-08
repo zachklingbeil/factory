@@ -73,7 +73,7 @@ func (p *Peers) LoadMap() error {
 		return fmt.Errorf("error iterating over peer rows: %w", err)
 	}
 
-	fmt.Printf("Loaded %d peers into the map.\n", len(p.Map))
+	fmt.Printf("peers %d\n", len(p.Map))
 	return nil
 }
 
@@ -91,7 +91,7 @@ func (p *Peers) LoadUnprocessedAddresses() error {
 	}
 
 	p.Addresses = addresses // Set the slice with unprocessed addresses
-	fmt.Printf("Loaded %d unprocessed addresses.\n", len(p.Addresses))
+	fmt.Printf("peers to process %d\n", len(p.Addresses))
 	return nil
 }
 

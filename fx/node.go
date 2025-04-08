@@ -15,7 +15,7 @@ func Node(ctx context.Context) (*rpc.Client, *ethclient.Client, error) {
 		log.Printf("Failed to connect to the Ethereum client: %v", err)
 		return nil, nil, err
 	}
-	log.Println("Successfully connected to the Ethereum client.")
+	// log.Println("Successfully connected to the Ethereum client.")
 	eth := ethclient.NewClient(rpc)
 	return rpc, eth, nil
 }

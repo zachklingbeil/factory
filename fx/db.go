@@ -21,7 +21,7 @@ func NewDatabase(dbName string) (*Database, error) {
 	const maxRetries = 5
 	for i := 1; i <= maxRetries; i++ {
 		if err := db.Ping(); err == nil {
-			fmt.Printf("Connected to database '%s'\n", dbName)
+			// fmt.Printf("Connected to database '%s'\n", dbName)
 			return &Database{DB: db}, nil
 		}
 		fmt.Printf("Retrying connection to database '%s' (%d/%d)...\n", dbName, i, maxRetries)

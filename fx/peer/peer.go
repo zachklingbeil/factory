@@ -131,9 +131,9 @@ func (p *Peers) HelloUniverse() {
 			fmt.Printf("Error saving peer %s: %v\n", peer.Address, err)
 		}
 
-		// Update progress
+		// Update progress and print details
+		fmt.Printf("%d | %s %s %s %s\n", peers, peer.ENS, peer.LoopringENS, peer.LoopringID, peer.Address)
 		peers--
-		fmt.Printf("%d\n", peers)
 	}
 
 	fmt.Println("Hello Universe")

@@ -36,15 +36,19 @@ func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
 		Db:             db,
 	}
 
-	// // Load the entire map first
-	// if err := peers.LoadMap(); err != nil {
-	// 	fmt.Printf("Error loading map: %v\n", err)
-	// }
+	if err := peers.InitPeers(); err != nil {
+		fmt.Printf("Error initializing peers: %v\n", err)
+	}
 
-	// // Then load unprocessed addresses
-	// if err := peers.LoadUnprocessedAddresses(); err != nil {
-	// 	fmt.Printf("Error loading unprocessed addresses: %v\n", err)
-	// }
+	// Load the entire map first
+	if err := peers.LoadMap(); err != nil {
+		fmt.Printf("Error loading map: %v\n", err)
+	}
+
+	// Then load unprocessed addresses
+	if err := peers.LoadUnprocessedAddresses(); err != nil {
+		fmt.Printf("Error loading unprocessed addresses: %v\n", err)
+	}
 
 	return peers
 }

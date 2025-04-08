@@ -66,12 +66,12 @@ func (p *Peers) GetLoopringID(peer *Peer, address string) {
 	}
 	if data, err := p.Json.In(url, os.Getenv("LOOPRING_API_KEY")); err == nil && json.Unmarshal(data, &response) == nil {
 		if response.ID == 0 {
-			peer.LoopringID = -1 // Use -1 to indicate no LoopringID
+			peer.LoopringID = "."
 		} else {
-			peer.LoopringID = response.ID
+			peer.LoopringID = strconv.FormatInt(response.ID, 10)
 		}
 	} else {
-		peer.LoopringID = -2 // Use -2 to indicate an error
+		peer.LoopringID = "!" // Assign "!" if there is an error
 	}
 }
 

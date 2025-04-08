@@ -196,7 +196,7 @@ func (p *Peers) InitPeers() error {
         address TEXT PRIMARY KEY,
         ens TEXT DEFAULT '',
         loopring_ens TEXT DEFAULT '',
-        loopring_id INTEGER DEFAULT -2
+        loopring_id TEXT DEFAULT ''
     )`
 	if _, err := p.Db.Exec(query); err != nil {
 		return fmt.Errorf("failed to create new peers table: %w", err)
@@ -210,7 +210,7 @@ func (p *Peers) InitPeers() error {
 
 	stmt, err := tx.Prepare(`
     INSERT INTO peers (address, ens, loopring_ens, loopring_id)
-    VALUES ($1, '', '', -2)
+    VALUES ($1, '', '', '')
     ON CONFLICT (address) DO NOTHING
     `)
 	if err != nil {

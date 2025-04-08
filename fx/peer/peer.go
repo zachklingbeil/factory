@@ -23,7 +23,7 @@ type Peer struct {
 	Address     string
 	ENS         string
 	LoopringENS string
-	LoopringID  int64
+	LoopringID  string
 }
 
 func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
@@ -32,7 +32,7 @@ func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
 		Eth:            eth,
 		LoopringApiKey: os.Getenv("LOOPRING_API_KEY"),
 		Map:            make(map[string]*Peer),
-		Addresses:      make([]string, 250000),
+		Addresses:      nil,
 		Db:             db,
 	}
 
@@ -40,15 +40,15 @@ func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
 		fmt.Printf("Error initializing peers: %v\n", err)
 	}
 
-	// Load the entire map first
-	if err := peers.LoadMap(); err != nil {
-		fmt.Printf("Error loading map: %v\n", err)
-	}
+	// // Load the entire map first
+	// if err := peers.LoadMap(); err != nil {
+	// 	fmt.Printf("Error loading map: %v\n", err)
+	// }
 
-	// Then load unprocessed addresses
-	if err := peers.LoadUnprocessedAddresses(); err != nil {
-		fmt.Printf("Error loading unprocessed addresses: %v\n", err)
-	}
+	// // Then load unprocessed addresses
+	// if err := peers.LoadUnprocessedAddresses(); err != nil {
+	// 	fmt.Printf("Error loading unprocessed addresses: %v\n", err)
+	// }
 
 	return peers
 }
@@ -85,15 +85,16 @@ func (p *Peers) LoadUnprocessedAddresses() error {
 	var addresses []string
 	query := `
         SELECT address FROM peers
+        WHERE ens IN ('', '!') OR loopring_ens IN ('', '!') OR loopring_id IN ('', '!')
     `
 	err := p.Db.ColumnToSlice(query, "address", &addresses)
 	if err != nil {
-		return fmt.Errorf("failed to load all addresses: %w", err)
+		return fmt.Errorf("failed to load unprocessed addresses: %w", err)
 	}
 
 	p.Mu.Lock()
 	defer p.Mu.Unlock()
-	p.Addresses = addresses
+	p.Addresses = addresses // Dynamically set the slice
 	return nil
 }
 
@@ -117,7 +118,7 @@ func (p *Peers) HelloUniverse() {
 	p.Mu.Lock()
 	defer p.Mu.Unlock()
 
-	peers := len(p.Addresses)
+	peers := len(p.Addresses) // Use the actual length of the slice
 	fmt.Printf("%d peers to process\n", peers)
 
 	for _, address := range p.Addresses {
@@ -134,7 +135,7 @@ func (p *Peers) HelloUniverse() {
 		if peer.LoopringENS == "" || peer.LoopringENS == "!" {
 			p.GetLoopringENS(peer, peer.Address)
 		}
-		if peer.LoopringID == -2 {
+		if peer.LoopringID == "" || peer.LoopringID == "!" {
 			p.GetLoopringID(peer, peer.Address)
 		}
 

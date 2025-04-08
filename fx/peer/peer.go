@@ -141,6 +141,7 @@ func (p *Peers) SavePeersBatch(peers []*Peer) error {
 	}
 	return nil
 }
+
 func (p *Peers) HelloUniverse() {
 	p.Mu.Lock()
 	defer p.Mu.Unlock()
@@ -148,7 +149,7 @@ func (p *Peers) HelloUniverse() {
 	peers := len(p.Addresses) // Use the actual length of the slice
 	fmt.Printf("%d peers to process\n", peers)
 
-	batchSize := 1000 // Define the batch size
+	batchSize := 100 // Define the batch size
 	var batch []*Peer
 
 	for _, address := range p.Addresses {
@@ -166,12 +167,14 @@ func (p *Peers) HelloUniverse() {
 		if len(batch) >= batchSize {
 			if err := p.SavePeersBatch(batch); err != nil {
 				fmt.Printf("Error saving batch: %v\n", err)
+			} else {
+				fmt.Printf("Successfully updated a batch of %d peers.\n", len(batch))
 			}
 			batch = batch[:0] // Clear the batch
 		}
 
 		// Update progress and print details
-		fmt.Printf("%d | %s %s %s\n", peers, peer.ENS, peer.LoopringENS, peer.LoopringID)
+		fmt.Printf("%d | %s %s %s %s\n", peers, peer.ENS, peer.LoopringENS, peer.LoopringID, peer.Address)
 		peers--
 	}
 
@@ -179,6 +182,8 @@ func (p *Peers) HelloUniverse() {
 	if len(batch) > 0 {
 		if err := p.SavePeersBatch(batch); err != nil {
 			fmt.Printf("Error saving final batch: %v\n", err)
+		} else {
+			fmt.Printf("Successfully updated the final batch of %d peers.\n", len(batch))
 		}
 	}
 

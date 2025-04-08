@@ -12,11 +12,9 @@ import (
 )
 
 func (p *Peers) Format(address string) string {
-	if strings.HasPrefix(address, "0x") {
-		return "0x" + strings.ToLower(address[2:])
-	}
-	if strings.HasSuffix(address, ".eth") {
-		return strings.ToLower(address)
+	address = strings.ToLower(address)
+	if strings.HasPrefix(address, "0x") || strings.HasSuffix(address, ".eth") {
+		return address
 	}
 	return address
 }
@@ -47,15 +45,12 @@ func (p *Peers) GetLoopringENS(peer *Peer, address string) {
 	var response struct {
 		Loopring string `json:"data"`
 	}
-	if data, err := p.Json.In(url, ""); err == nil && json.Unmarshal(data, &response) == nil {
-		if response.Loopring == "" {
-			peer.LoopringENS = "."
-		} else {
-			peer.LoopringENS = p.Format(response.Loopring)
-		}
-	} else {
-		peer.LoopringENS = "!"
+	data, err := p.Json.In(url, "")
+	if err != nil || json.Unmarshal(data, &response) != nil || response.Loopring == "" {
+		peer.LoopringENS = "." // Assign "." for errors or if no Loopring ENS is found
+		return
 	}
+	peer.LoopringENS = p.Format(response.Loopring) // Assign the resolved Loopring ENS
 }
 
 // hex -> LoopringId
@@ -64,15 +59,12 @@ func (p *Peers) GetLoopringID(peer *Peer, address string) {
 	var response struct {
 		ID int64 `json:"accountId"`
 	}
-	if data, err := p.Json.In(url, os.Getenv("LOOPRING_API_KEY")); err == nil && json.Unmarshal(data, &response) == nil {
-		if response.ID == 0 {
-			peer.LoopringID = "."
-		} else {
-			peer.LoopringID = strconv.FormatInt(response.ID, 10)
-		}
-	} else {
-		peer.LoopringID = "!" // Assign "!" if there is an error
+	data, err := p.Json.In(url, os.Getenv("LOOPRING_API_KEY"))
+	if err != nil || json.Unmarshal(data, &response) != nil || response.ID == 0 {
+		peer.LoopringID = "." // Assign "." for errors or if no Loopring ID is found
+		return
 	}
+	peer.LoopringID = strconv.FormatInt(response.ID, 10) // Assign the resolved Loopring ID
 }
 
 // LoopringId -> hex

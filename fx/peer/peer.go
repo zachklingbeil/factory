@@ -36,20 +36,14 @@ func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
 		Db:             db,
 	}
 
-	// Load the entire map first
-	if err := peers.LoadMap(); err != nil {
-		fmt.Printf("Error loading map: %v\n", err)
-	}
-
-	// Then load unprocessed addresses
-	if err := peers.LoadUnprocessedAddresses(); err != nil {
-		fmt.Printf("Error loading unprocessed addresses: %v\n", err)
+	if err := peers.LoadPeers(); err != nil {
+		fmt.Printf("Error loading peers: %v\n", err)
 	}
 
 	return peers
 }
 
-func (p *Peers) LoadMap() error {
+func (p *Peers) LoadPeers() error {
 	query := `
         SELECT address, ens, loopring_ens, loopring_id FROM peers
     `
@@ -58,8 +52,11 @@ func (p *Peers) LoadMap() error {
 		return fmt.Errorf("failed to load peers from database: %w", err)
 	}
 	defer rows.Close()
+
 	p.Mu.Lock()
 	defer p.Mu.Unlock()
+	// Initialize the map
+	var addresses []string // Temporary slice for unprocessed addresses
 
 	for rows.Next() {
 		var peer Peer
@@ -67,48 +64,25 @@ func (p *Peers) LoadMap() error {
 			return fmt.Errorf("failed to scan peer row: %w", err)
 		}
 		p.Map[peer.Address] = &peer
+
+		// Check if the peer is unprocessed
+		if peer.ENS == "" ||
+			peer.LoopringENS == "" || peer.LoopringENS == "!" ||
+			peer.LoopringID == "" || peer.LoopringID == "!" {
+			addresses = append(addresses, peer.Address)
+		}
 	}
 
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("error iterating over peer rows: %w", err)
 	}
 
-	fmt.Printf("peers %d\n", len(p.Map))
+	p.Addresses = addresses // Assign unprocessed addresses
+	fmt.Printf("%d peers, %d peers to process\n", len(p.Map), len(p.Addresses))
 	return nil
 }
 
-func (p *Peers) LoadUnprocessedAddresses() error {
-	p.Mu.Lock()
-	defer p.Mu.Unlock()
-
-	var addresses []string
-	for address, peer := range p.Map {
-		if peer.ENS == "" ||
-			peer.LoopringENS == "" || peer.LoopringENS == "!" ||
-			peer.LoopringID == "" || peer.LoopringID == "!" {
-			addresses = append(addresses, address)
-		}
-	}
-	p.Addresses = addresses
-	return nil
-}
-
-func (p *Peers) SavePeer(peer *Peer) error {
-	query := `
-    INSERT INTO peers (address, ens, loopring_ens, loopring_id)
-    VALUES ($1, $2, $3, $4)
-    ON CONFLICT (address) DO UPDATE SET
-        ens = EXCLUDED.ens,
-        loopring_ens = EXCLUDED.loopring_ens,
-        loopring_id = EXCLUDED.loopring_id
-    `
-	_, err := p.Db.Exec(query, peer.Address, peer.ENS, peer.LoopringENS, peer.LoopringID)
-	if err != nil {
-		return fmt.Errorf("failed to save peer %s: %w", peer.Address, err)
-	}
-	return nil
-}
-func (p *Peers) SavePeersBatch(peers []*Peer) error {
+func (p *Peers) SavePeers(peers []*Peer) error {
 	query := `
     INSERT INTO peers (address, ens, loopring_ens, loopring_id)
     VALUES %s
@@ -144,46 +118,38 @@ func (p *Peers) HelloUniverse() {
 	p.Mu.Lock()
 	defer p.Mu.Unlock()
 
-	peers := len(p.Addresses) // Use the actual length of the slice
+	peers := len(p.Addresses)
 	fmt.Printf("%d peers to process\n", peers)
 
-	batchSize := 1000 // Define the batch size
+	batchSize := 1000
 	var batch []*Peer
 
 	for _, address := range p.Addresses {
-		peer := p.Map[address] // No need to check existence; LoadUnprocessedAddresses ensures validity
+		peer := p.Map[address]
 
-		// Populate missing fields for the peer
 		p.GetENS(peer, peer.Address)
-		// p.GetLoopringENS(peer, peer.Address)
-		// p.GetLoopringID(peer, peer.Address)
+		p.GetLoopringENS(peer, peer.Address)
+		p.GetLoopringID(peer, peer.Address)
 
-		// Add the peer to the batch
 		batch = append(batch, peer)
 
-		// If the batch size is reached, execute the batch insert
 		if len(batch) >= batchSize {
-			if err := p.SavePeersBatch(batch); err != nil {
+			if err := p.SavePeers(batch); err != nil {
 				fmt.Printf("Error saving batch: %v\n", err)
 			} else {
 				fmt.Printf("Successfully updated a batch of %d peers.\n", len(batch))
 			}
-			batch = batch[:0] // Clear the batch
+			batch = batch[:0]
 		}
 
-		// Update progress and print details
 		fmt.Printf("%d %s %s %s\n", peers, peer.ENS, peer.LoopringENS, peer.LoopringID)
 		peers--
 	}
 
-	// Insert any remaining peers in the batch
 	if len(batch) > 0 {
-		if err := p.SavePeersBatch(batch); err != nil {
+		if err := p.SavePeers(batch); err != nil {
 			fmt.Printf("Error saving final batch: %v\n", err)
-		} else {
-			fmt.Printf("Successfully updated the final batch of %d peers.\n", len(batch))
 		}
 	}
-
 	fmt.Println("Hello Universe")
 }

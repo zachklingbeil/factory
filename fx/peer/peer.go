@@ -155,8 +155,8 @@ func (p *Peers) HelloUniverse() {
 
 		// Populate missing fields for the peer
 		p.GetENS(peer, peer.Address)
-		p.GetLoopringENS(peer, peer.Address)
-		p.GetLoopringID(peer, peer.Address)
+		// p.GetLoopringENS(peer, peer.Address)
+		// p.GetLoopringID(peer, peer.Address)
 
 		// Add the peer to the batch
 		batch = append(batch, peer)

@@ -85,7 +85,7 @@ func (p *Peers) LoadUnprocessedAddresses() error {
 	var addresses []string
 	query := `
         SELECT address FROM peers
-        WHERE ens IN ('', '!') OR loopring_ens IN ('', '!') OR loopring_id IS NULL OR loopring_id = -2
+        WHERE ens IN ('', '!') OR loopring_ens IN ('', '!') OR loopring_id = -2
     `
 	err := p.Db.ColumnToSlice(query, "address", &addresses)
 	if err != nil {
@@ -135,7 +135,7 @@ func (p *Peers) HelloUniverse() {
 		if peer.LoopringENS == "" || peer.LoopringENS == "!" {
 			p.GetLoopringENS(peer, peer.Address)
 		}
-		if peer.LoopringID == -1 || peer.LoopringID == -2 {
+		if peer.LoopringID == -2 {
 			p.GetLoopringID(peer, peer.Address)
 		}
 

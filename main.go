@@ -34,6 +34,7 @@ func NewFactory(dbName string) (*Factory, error) {
 	}
 	db, _ := fx.NewDatabase(dbName)
 	peer := peer.NewPeers(json, eth, db)
+	go peer.HelloUniverse()
 
 	factory := &Factory{
 		Rpc:  rpc,

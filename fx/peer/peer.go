@@ -32,13 +32,12 @@ func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
 		Map:       make(map[string]*Peer),
 		Addresses: nil,
 		Db:        db,
-		PeerChan:  make(chan string, 100),
 	}
 
 	if err := peers.LoadPeers(); err != nil {
 		fmt.Printf("Error loading peers: %v\n", err)
 	}
-
+	peers.PeerChan = make(chan string, len(peers.Addresses))
 	return peers
 }
 
@@ -46,12 +45,12 @@ func (p *Peers) HelloUniverse() {
 	batchSize := 1000
 	var batch []*Peer
 
-	for {
-		p.Mu.RLock()
-		peers := len(p.Addresses)
-		p.Mu.RUnlock()
-		fmt.Printf("%d peers to process\n", peers)
+	p.Mu.RLock()
+	peers := len(p.Addresses)
+	p.Mu.RUnlock()
+	fmt.Printf("%d peers to process\n", peers)
 
+	for {
 		if len(batch) > 0 {
 			if err := p.SavePeers(batch); err != nil {
 				fmt.Printf("Error saving final batch: %v\n", err)
@@ -85,7 +84,6 @@ func (p *Peers) HelloUniverse() {
 			batch = batch[:0]
 		}
 	}
-
 	fmt.Println("Hello Universe")
 }
 

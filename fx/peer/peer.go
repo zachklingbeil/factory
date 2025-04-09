@@ -92,3 +92,19 @@ func (p *Peers) HelloUniverse() {
 	}
 	fmt.Println("Hello Universe")
 }
+
+func (p *Peers) NewBlock(addresses []string) {
+	p.Mu.Lock()
+	defer p.Mu.Unlock()
+
+	peers := len(addresses)
+	fmt.Printf("%d peers from new block\n", peers)
+
+	for _, address := range addresses {
+		if _, exists := p.Map[address]; !exists {
+			p.Map[address] = &Peer{Address: address}
+			p.Addresses = append(p.Addresses, address)
+		}
+		p.PeerChan <- address
+	}
+}

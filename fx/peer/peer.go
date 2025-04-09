@@ -59,6 +59,10 @@ func (p *Peers) HelloUniverse() {
 			batch = batch[:0]
 		}
 
+		if peers == 0 && len(batch) == 0 {
+			break
+		}
+
 		address := <-p.PeerChan
 
 		p.Mu.Lock()
@@ -78,15 +82,11 @@ func (p *Peers) HelloUniverse() {
 			if err := p.SavePeers(batch); err != nil {
 				fmt.Printf("Error saving batch: %v\n", err)
 			}
+			batch = batch[:0]
 		}
-
-		if len(batch) > 0 {
-			if err := p.SavePeers(batch); err != nil {
-				fmt.Printf("Error saving final batch: %v\n", err)
-			}
-		}
-		fmt.Println("Hello Universe")
 	}
+
+	fmt.Println("Hello Universe")
 }
 
 func (p *Peers) NewBlock(addresses []string) {

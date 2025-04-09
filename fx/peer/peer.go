@@ -69,7 +69,7 @@ func (p *Peers) HelloUniverse() {
 		peer := p.Map[address]
 		p.Mu.Unlock()
 
-		p.GetENS(peer, peer.Address)
+		// p.GetENS(peer, peer.Address)
 		p.GetLoopringENS(peer, peer.Address)
 		p.GetLoopringID(peer, peer.Address)
 

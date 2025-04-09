@@ -10,7 +10,7 @@ import (
 
 // Establish geth.ipc connection (http, websocket disabled)
 func Node(ctx context.Context) (*rpc.Client, *ethclient.Client, error) {
-	rpc, err := rpc.DialIPC(ctx, "/root/.ethereum/geth.ipc")
+	rpc, err := rpc.DialIPC(ctx, "/ethereum/geth.ipc") // Updated path
 	if err != nil {
 		log.Printf("Failed to connect to the Ethereum client: %v", err)
 		return nil, nil, err

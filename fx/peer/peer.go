@@ -37,7 +37,13 @@ func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
 	if err := peers.LoadPeers(); err != nil {
 		fmt.Printf("Error loading peers: %v\n", err)
 	}
+
 	peers.PeerChan = make(chan string, len(peers.Addresses))
+
+	for _, address := range peers.Addresses {
+		peers.PeerChan <- address
+	}
+
 	return peers
 }
 
@@ -85,20 +91,4 @@ func (p *Peers) HelloUniverse() {
 		}
 	}
 	fmt.Println("Hello Universe")
-}
-
-func (p *Peers) NewBlock(addresses []string) {
-	p.Mu.Lock()
-	defer p.Mu.Unlock()
-
-	peers := len(addresses)
-	fmt.Printf("%d peers from new block\n", peers)
-
-	for _, address := range addresses {
-		if _, exists := p.Map[address]; !exists {
-			p.Map[address] = &Peer{Address: address}
-			p.Addresses = append(p.Addresses, address)
-		}
-		p.PeerChan <- address
-	}
 }

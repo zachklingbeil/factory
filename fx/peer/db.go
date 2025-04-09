@@ -23,7 +23,7 @@ func (p *Peers) LoadPeers() error {
 		}
 		p.Map[peer.Address] = &peer
 
-		if peer.ENS == "" ||
+		if peer.ENS == "" || peer.ENS == "!" ||
 			peer.LoopringENS == "" || peer.LoopringENS == "!" ||
 			peer.LoopringID == "" || peer.LoopringID == "!" {
 			addresses = append(addresses, peer.Address)

@@ -35,7 +35,7 @@ func (p *Peers) LoadPeers() error {
 	}
 
 	p.Addresses = addresses
-	fmt.Printf("%d peers, %d peers to process\n", len(p.Map), len(p.Addresses))
+	fmt.Printf("%d peers\n", len(p.Map))
 	return nil
 }
 

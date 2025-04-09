@@ -33,6 +33,8 @@ func NewFactory(dbName string) (*Factory, error) {
 		return nil, fmt.Errorf("failed to create Ethereum node: %w", err)
 	}
 	db, _ := fx.NewDatabase(dbName)
+	fmt.Printf("factory [ %s ]\n", dbName)
+
 	peer := peer.NewPeers(json, eth, db)
 	go peer.HelloUniverse()
 
@@ -46,6 +48,5 @@ func NewFactory(dbName string) (*Factory, error) {
 		Peer: peer,
 	}
 
-	fmt.Printf("factory [ %s ]\n", dbName)
 	return factory, nil
 }

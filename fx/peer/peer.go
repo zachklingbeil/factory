@@ -94,16 +94,13 @@ func (p *Peers) NewBlock(addresses []string) {
 	defer p.Mu.Unlock()
 
 	peers := len(addresses)
-	fmt.Printf("%d peers to process\n", peers)
+	fmt.Printf("%d peers from new block\n", peers)
 
 	for _, address := range addresses {
 		if _, exists := p.Map[address]; !exists {
 			p.Map[address] = &Peer{Address: address}
 			p.Addresses = append(p.Addresses, address)
 		}
-
-		// Send the address to the channel and process it immediately
-		fmt.Printf("Sending address to PeerChan: %s\n", address) // Debug log
 		p.PeerChan <- address
 	}
 }

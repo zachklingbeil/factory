@@ -41,32 +41,3 @@ func (p *Peers) LoadPeers() error {
 	fmt.Printf("%d peers loaded\n", len(p.Map))
 	return nil
 }
-
-func (p *Peers) SavePeers(peers []*Peer) error {
-	query := `
-    INSERT INTO peers (address, ens, loopring_ens, loopring_id)
-    VALUES %s
-    ON CONFLICT (address) DO UPDATE SET
-        ens = EXCLUDED.ens,
-        loopring_ens = EXCLUDED.loopring_ens,
-        loopring_id = EXCLUDED.loopring_id
-    `
-
-	values := []any{}
-	placeholders := ""
-	for i, peer := range peers {
-		if i > 0 {
-			placeholders += ", "
-		}
-		placeholders += fmt.Sprintf("($%d, $%d, $%d, $%d)", i*4+1, i*4+2, i*4+3, i*4+4)
-		values = append(values, peer.Address, peer.ENS, peer.LoopringENS, peer.LoopringID)
-	}
-
-	query = fmt.Sprintf(query, placeholders)
-
-	_, err := p.Db.Exec(query, values...)
-	if err != nil {
-		return fmt.Errorf("failed to save peers batch: %w", err)
-	}
-	return nil
-}

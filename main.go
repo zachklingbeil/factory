@@ -34,7 +34,6 @@ func NewFactory(dbName string) (*Factory, error) {
 	}
 	db, _ := fx.NewDatabase(dbName)
 	fmt.Printf("factory [ %s ]\n", dbName)
-	db.Consolidate()
 
 	peer := peer.NewPeers(json, eth, db)
 	// go peer.HelloUniverse()

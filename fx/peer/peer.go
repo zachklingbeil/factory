@@ -120,12 +120,12 @@ func (p *Peers) CreatePeersTable() error {
 func (p *Peers) SavePeers() error {
 	const batchSize = 1000 // Number of peers per batch
 	queryTemplate := `
-    INSERT INTO peers (address, ens, loopring_ens, loopring_id)
+    INSERT INTO peers (address, ens, loopringEns, loopringId)
     VALUES %s
     ON CONFLICT (address) DO UPDATE SET
         ens = EXCLUDED.ens,
-        loopring_ens = EXCLUDED.loopring_ens,
-        loopring_id = EXCLUDED.loopring_id
+        loopringEns = EXCLUDED.loopringEns,
+        loopringId = EXCLUDED.loopringId
     `
 
 	p.Mu.RLock()

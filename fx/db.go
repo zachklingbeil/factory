@@ -39,7 +39,7 @@ func (db *Database) Consolidate() error {
 
 	// Create the table with columns key, value (as INTEGER), and jsonb
 	createTableQuery := `
-        CREATE TABLE IF NOT EXISTS data (
+        CREATE TABLE IF NOT EXISTS universe (
             key TEXT PRIMARY KEY,
             value INTEGER NOT NULL,
             jsonb_data JSONB
@@ -56,7 +56,7 @@ func (db *Database) Consolidate() error {
 
 func (db *Database) Insert(key string, data []map[string]any) error {
 	// Check if the key already exists and get the current value
-	selectQuery := `SELECT value FROM data WHERE key = $1;`
+	selectQuery := `SELECT value FROM universe WHERE key = $1;`
 	var currentValue int
 	err := db.QueryRow(selectQuery, key).Scan(&currentValue)
 	if err != nil {
@@ -76,9 +76,9 @@ func (db *Database) Insert(key string, data []map[string]any) error {
 		return fmt.Errorf("failed to marshal jsonb data for key '%s': %w", key, err)
 	}
 
-	// Insert or update the row in the database
+	// Insert or update the row in the universe table
 	insertQuery := `
-        INSERT INTO data (key, value, jsonb_data)
+        INSERT INTO universe (key, value, jsonb_data)
         VALUES ($1, $2, $3)
         ON CONFLICT (key) DO UPDATE
         SET value = $2, jsonb_data = EXCLUDED.jsonb_data;
@@ -93,7 +93,7 @@ func (db *Database) Insert(key string, data []map[string]any) error {
 }
 
 func (db *Database) GetData(key string) ([]map[string]any, int, error) {
-	selectQuery := `SELECT value, jsonb_data FROM data WHERE key = $1;`
+	selectQuery := `SELECT value, jsonb_data FROM universe WHERE key = $1;`
 
 	row := db.QueryRow(selectQuery, key)
 

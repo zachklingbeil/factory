@@ -28,8 +28,8 @@ type Peers struct {
 type Peer struct {
 	Address     string `json:"address"`
 	ENS         string `json:"ens"`
-	LoopringENS string `json:"loopring_ens"`
-	LoopringID  int64  `json:"loopring_id"`
+	LoopringENS string `json:"loopringEns"`
+	LoopringID  int64  `json:"loopringId"`
 }
 
 func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
@@ -125,12 +125,12 @@ func (p *Peers) LoadAndSavePeersFromJSON() error {
 
 // func (p *Peers) SavePeers(peers []*Peer) error {
 // 	query := `
-//     INSERT INTO peers (address, ens, loopring_ens, loopring_id)
+//     INSERT INTO peers (address, ens, loopringEns, loopringId)
 //     VALUES %s
 //     ON CONFLICT (address) DO UPDATE SET
 //         ens = EXCLUDED.ens,
-//         loopring_ens = EXCLUDED.loopring_ens,
-//         loopring_id = EXCLUDED.loopring_id
+//         loopringEns = EXCLUDED.loopringEns,
+//         loopringId = EXCLUDED.loopringId
 //     `
 
 // 	values := []any{}
@@ -157,8 +157,8 @@ func (p *Peers) CreatePeersTable() error {
     CREATE TABLE IF NOT EXISTS peers (
         address TEXT PRIMARY KEY,
         ens TEXT NOT NULL,
-        loopring_ens TEXT NOT NULL,
-        loopring_id BIGINT NOT NULL
+        loopringEns TEXT NOT NULL,
+        loopringId BIGINT NOT NULL
     );
     `
 	_, err := p.Db.Exec(query)
@@ -170,12 +170,12 @@ func (p *Peers) CreatePeersTable() error {
 }
 func (p *Peers) SavePeers() error {
 	query := `
-    INSERT INTO peers (address, ens, loopring_ens, loopring_id)
+    INSERT INTO peers (address, ens, loopringEns, loopringId)
     VALUES %s
     ON CONFLICT (address) DO UPDATE SET
         ens = EXCLUDED.ens,
-        loopring_ens = EXCLUDED.loopring_ens,
-        loopring_id = EXCLUDED.loopring_id
+        loopringEns = EXCLUDED.loopringEns,
+        loopringId = EXCLUDED.loopringId
     `
 
 	values := []any{}

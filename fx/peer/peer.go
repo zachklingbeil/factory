@@ -121,14 +121,28 @@ func (p *Peers) NewBlock(addresses []string) {
 }
 
 // SavePeersToJSON saves the Peers.Map to a JSON file as a slice of Peer objects and logs the count.
+// SavePeersToJSON saves the Peers.Map to a JSON file with specific fields and uses the int64 version of LoopringID.
 func (p *Peers) SavePeersToJSON(filename string) error {
 	p.Mu.RLock()
 	defer p.Mu.RUnlock()
 
-	// Create a slice to hold the Peer objects
-	var peersSlice []*Peer
+	// Define a custom struct for serialization
+	type PeerOutput struct {
+		Address     string `json:"address"`
+		ENS         string `json:"ens"`
+		LoopringENS string `json:"loopring_ens"`
+		LoopringID  int64  `json:"loopring_id"`
+	}
+
+	// Create a slice to hold the serialized Peer objects
+	var peersSlice []PeerOutput
 	for _, peer := range p.Map {
-		peersSlice = append(peersSlice, peer)
+		peersSlice = append(peersSlice, PeerOutput{
+			Address:     peer.Address,
+			ENS:         peer.ENS,
+			LoopringENS: peer.LoopringENS,
+			LoopringID:  peer.LoopringIDINT, // Use the int64 version of LoopringID
+		})
 	}
 
 	// Log the number of peers

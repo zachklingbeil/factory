@@ -169,17 +169,25 @@ func (p *Peers) SavePeersToJSON(filename string) error {
 	return nil
 }
 
-// UpdateLoopringIDInt updates the LoopringIDInt column in the database by converting LoopringID strings to integers.
 // UpdateLoopringIDInt updates the LoopringIDINT field in memory by converting LoopringID strings to integers.
+// Assigns -1 to LoopringIDINT if the LoopringID contains a ".".
 func (p *Peers) UpdateLoopringIDInt() error {
 	p.Mu.RLock()
 	defer p.Mu.RUnlock()
 
 	for _, peer := range p.Map {
+		// Check if LoopringID contains a "."
+		if peer.LoopringID == "." {
+			peer.LoopringIDINT = -1
+			fmt.Printf("Assigned -1 to LoopringIDINT for address '%s' due to invalid LoopringID: '%s'\n", peer.Address, peer.LoopringID)
+			continue
+		}
+
 		// Convert LoopringID string to int64
 		loopringIDInt, err := strconv.ParseInt(peer.LoopringID, 10, 64)
 		if err != nil {
-			fmt.Printf("Failed to convert LoopringID '%s' to int: %v\n", peer.LoopringID, err)
+			peer.LoopringIDINT = -1
+			fmt.Printf("Failed to convert LoopringID '%s' to int for address '%s': %v\n", peer.LoopringID, peer.Address, err)
 			continue
 		}
 

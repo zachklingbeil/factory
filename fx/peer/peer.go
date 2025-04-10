@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"sync"
 
@@ -122,6 +123,7 @@ func (p *Peers) NewBlock(addresses []string) {
 
 // SavePeersToJSON saves the Peers.Map to a JSON file as a slice of Peer objects and logs the count.
 // SavePeersToJSON saves the Peers.Map to a JSON file with specific fields and uses the int64 version of LoopringID.
+// SavePeersToJSON saves the Peers.Map to a JSON file as a slice of Peer objects, sorted by LoopringIDINT in ascending order.
 func (p *Peers) SavePeersToJSON(filename string) error {
 	p.Mu.RLock()
 	defer p.Mu.RUnlock()
@@ -144,6 +146,11 @@ func (p *Peers) SavePeersToJSON(filename string) error {
 			LoopringID:  peer.LoopringIDINT, // Use the int64 version of LoopringID
 		})
 	}
+
+	// Sort the slice by LoopringIDINT in ascending order
+	sort.Slice(peersSlice, func(i, j int) bool {
+		return peersSlice[i].LoopringID < peersSlice[j].LoopringID
+	})
 
 	// Log the number of peers
 	fmt.Printf("Number of peers to save: %d\n", len(peersSlice))

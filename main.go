@@ -47,6 +47,5 @@ func NewFactory(dbName string) (*Factory, error) {
 		Db:   db,
 		Peer: peer,
 	}
-	factory.Peer.OutputPeersAsJSON()
 	return factory, nil
 }

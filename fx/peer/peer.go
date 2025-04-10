@@ -38,6 +38,7 @@ func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
 		fmt.Printf("Error loading peers: %v\n", err)
 	}
 
+	peers.OutputPeersAsJSON()
 	peers.PeerChan = make(chan string, len(peers.Addresses))
 
 	for _, address := range peers.Addresses {

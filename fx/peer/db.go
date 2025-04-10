@@ -100,7 +100,7 @@ func (p *Peers) OutputPeersAsJSON() error {
 	}
 
 	// Write JSON to a file or print to console
-	file, err := os.Create("peers.json")
+	file, err := os.Create("~/peers.json")
 	if err != nil {
 		return fmt.Errorf("failed to create JSON file: %w", err)
 	}

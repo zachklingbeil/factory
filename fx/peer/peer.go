@@ -130,8 +130,8 @@ func (p *Peers) SavePeersToJSON(filename string) error {
 	type PeerOutput struct {
 		Address     string `json:"address"`
 		ENS         string `json:"ens"`
-		LoopringENS string `json:"loopring_ens"`
-		LoopringID  int64  `json:"loopring_id"`
+		LoopringENS string `json:"loopringEns"`
+		LoopringID  int64  `json:"loopringId"`
 	}
 
 	// Create a slice to hold the serialized Peer objects
@@ -179,7 +179,6 @@ func (p *Peers) UpdateLoopringIDInt() error {
 		// Check if LoopringID contains a "."
 		if peer.LoopringID == "." {
 			peer.LoopringIDINT = -1
-			fmt.Printf("Assigned -1 to LoopringIDINT for address '%s' due to invalid LoopringID: '%s'\n", peer.Address, peer.LoopringID)
 			continue
 		}
 

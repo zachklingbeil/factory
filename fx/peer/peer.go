@@ -116,7 +116,7 @@ func (p *Peers) NewBlock(addresses []string) {
 	}
 }
 
-// SavePeersToJSON saves the Peers.Map to a JSON file as a slice of Peer objects.
+// SavePeersToJSON saves the Peers.Map to a JSON file as a slice of Peer objects and logs the count.
 func (p *Peers) SavePeersToJSON(filename string) error {
 	p.Mu.RLock()
 	defer p.Mu.RUnlock()
@@ -126,6 +126,9 @@ func (p *Peers) SavePeersToJSON(filename string) error {
 	for _, peer := range p.Map {
 		peersSlice = append(peersSlice, peer)
 	}
+
+	// Log the number of peers
+	fmt.Printf("Number of peers to save: %d\n", len(peersSlice))
 
 	// Marshal the slice to JSON
 	data, err := json.MarshalIndent(peersSlice, "", "  ")

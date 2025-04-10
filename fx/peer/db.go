@@ -47,10 +47,10 @@ func (p *Peers) LoadPeers() error {
 func (p *Peers) OutputPeersAsJSON() error {
 	fmt.Println("Starting OutputPeersAsJSON...")
 
+	// Query to fetch peers
 	query := `
         SELECT address, ens, loopring_ens, loopring_id FROM peers
     `
-	fmt.Println("Executing query to fetch peers...")
 	rows, err := p.Db.Query(query)
 	if err != nil {
 		return fmt.Errorf("failed to query peers table: %w", err)
@@ -58,48 +58,45 @@ func (p *Peers) OutputPeersAsJSON() error {
 	defer rows.Close()
 	fmt.Println("Query executed successfully.")
 
-	// Create a slice to hold the JSON Peer objects
-	var jsonPeers []struct {
+	// Define a struct for JSON output
+	type JSONPeer struct {
 		Address     string `json:"address"`
 		ENS         string `json:"ens"`
 		LoopringENS string `json:"loopring_ens"`
 		LoopringID  int64  `json:"loopring_id"`
 	}
 
+	// Slice to hold JSONPeer objects
+	var jsonPeers []JSONPeer
+
+	// Process rows
 	fmt.Println("Processing rows...")
 	for rows.Next() {
-		var peer Peer
-		var loopringIDStr string
-		if err := rows.Scan(&peer.Address, &peer.ENS, &peer.LoopringENS, &loopringIDStr); err != nil {
+		var address, ens, loopringENS, loopringIDStr string
+		if err := rows.Scan(&address, &ens, &loopringENS, &loopringIDStr); err != nil {
 			return fmt.Errorf("failed to scan peer row: %w", err)
 		}
 
-		// Convert LoopringID from string to int64
+		// Convert LoopringID to int64
 		loopringID, err := strconv.ParseInt(loopringIDStr, 10, 64)
 		if err != nil {
 			return fmt.Errorf("failed to convert LoopringID to int64: %w", err)
 		}
 
-		// Append to the JSON slice
-		jsonPeers = append(jsonPeers, struct {
-			Address     string `json:"address"`
-			ENS         string `json:"ens"`
-			LoopringENS string `json:"loopring_ens"`
-			LoopringID  int64  `json:"loopring_id"`
-		}{
-			Address:     peer.Address,
-			ENS:         peer.ENS,
-			LoopringENS: peer.LoopringENS,
+		// Append to JSONPeers slice
+		jsonPeers = append(jsonPeers, JSONPeer{
+			Address:     address,
+			ENS:         ens,
+			LoopringENS: loopringENS,
 			LoopringID:  loopringID,
 		})
 	}
-	fmt.Println("Rows processed successfully.")
-
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("error iterating over peer rows: %w", err)
 	}
+	fmt.Println("Rows processed successfully.")
 
-	// Convert the slice of JSON Peer objects to JSON
+	// Marshal data to JSON
 	fmt.Println("Marshalling data to JSON...")
 	jsonData, err := json.MarshalIndent(jsonPeers, "", "  ")
 	if err != nil {
@@ -107,22 +104,13 @@ func (p *Peers) OutputPeersAsJSON() error {
 	}
 	fmt.Println("Data marshalled to JSON successfully.")
 
-	// Write JSON to a file or print to console
+	// Write JSON to a file
 	fmt.Println("Creating JSON file...")
-	file, err := os.Create("peers.json")
-	if err != nil {
-		return fmt.Errorf("failed to create JSON file: %w", err)
-	}
-	defer file.Close()
-	fmt.Println("JSON file created successfully.")
-
-	fmt.Println("Writing data to JSON file...")
-	if _, err := file.Write(jsonData); err != nil {
+	if err := os.WriteFile("peers.json", jsonData, 0644); err != nil {
 		return fmt.Errorf("failed to write JSON to file: %w", err)
 	}
-	fmt.Println("Data written to JSON file successfully.")
+	fmt.Println("Data written to peers.json successfully.")
 
-	fmt.Println("Peers table exported to peers.json")
 	return nil
 }
 

@@ -60,10 +60,10 @@ func (p *Peers) GetLoopringID(peer *Peer, address string) {
 	}
 	data, err := p.Json.In(url, "")
 	if err != nil || json.Unmarshal(data, &response) != nil || response.ID == 0 {
-		peer.LoopringID = "." // Assign "." for errors or if no Loopring ID is found
+		peer.LoopringID = -1 // Assign -1 for errors or if no Loopring ID is found
 		return
 	}
-	peer.LoopringID = strconv.FormatInt(response.ID, 10) // Assign the resolved Loopring ID
+	peer.LoopringID = response.ID // Assign the resolved Loopring ID
 }
 
 // LoopringId -> hex

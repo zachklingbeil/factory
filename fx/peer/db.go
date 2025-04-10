@@ -25,9 +25,10 @@ func (p *Peers) LoadPeers() error {
 		}
 		p.Map[peer.Address] = &peer
 
+		// Check for missing or invalid fields
 		if peer.ENS == "" || peer.ENS == "!" ||
 			peer.LoopringENS == "" || peer.LoopringENS == "!" ||
-			peer.LoopringID == "" || peer.LoopringID == "!" {
+			peer.LoopringID == -1 { // Use -1 to indicate invalid LoopringID
 			addresses = append(addresses, peer.Address)
 		}
 	}
@@ -37,7 +38,7 @@ func (p *Peers) LoadPeers() error {
 	}
 
 	p.Addresses = addresses
-	fmt.Printf("%d peers\n", len(p.Map))
+	fmt.Printf("%d peers loaded\n", len(p.Map))
 	return nil
 }
 

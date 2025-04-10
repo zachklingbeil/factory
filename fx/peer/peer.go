@@ -1,16 +1,17 @@
 package peer
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
-	"os"
-	"sort"
-	"strconv"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/zachklingbeil/factory/fx"
 )
+
+//go:embed peers.json
+var peerJSON []byte
 
 type Peers struct {
 	Json      *fx.JSON
@@ -23,11 +24,10 @@ type Peers struct {
 }
 
 type Peer struct {
-	Address       string
-	ENS           string
-	LoopringENS   string
-	LoopringID    string
-	LoopringIDINT int64
+	Address     string `json:"address"`
+	ENS         string `json:"ens"`
+	LoopringENS string `json:"loopringEns"`
+	LoopringID  int64  `json:"loopringId"`
 }
 
 func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
@@ -39,25 +39,40 @@ func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
 		Db:        db,
 	}
 
-	if err := peers.LoadPeers(); err != nil {
-		fmt.Printf("Error loading peers: %v\n", err)
-	}
-	if err := peers.UpdateLoopringIDInt(); err != nil {
-		fmt.Printf("Error updating LoopringIDInt: %v\n", err)
-	}
-	// Save the peers to a JSON file
-	if err := peers.SavePeersToJSON("peers.json"); err != nil {
-		fmt.Printf("Error saving peers to JSON: %v\n", err)
+	// Initialize the Map with data from the embedded peer.json file
+	if err := peers.InitializeFromEmbeddedJSON(); err != nil {
+		fmt.Printf("Error initializing peers from embedded JSON: %v\n", err)
 	}
 
-	peers.PeerChan = make(chan string, len(peers.Addresses))
-
-	for _, address := range peers.Addresses {
-		peers.PeerChan <- address
+	// Save the initialized peers to the database
+	if err := peers.SavePeersToDB(); err != nil {
+		fmt.Printf("Error saving peers to database: %v\n", err)
 	}
 
 	return peers
 }
+
+// func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
+// 	peers := &Peers{
+// 		Json:      json,
+// 		Eth:       eth,
+// 		Map:       make(map[string]*Peer),
+// 		Addresses: nil,
+// 		Db:        db,
+// 	}
+
+// 	if err := peers.LoadPeers(); err != nil {
+// 		fmt.Printf("Error loading peers: %v\n", err)
+// 	}
+
+// 	peers.PeerChan = make(chan string, len(peers.Addresses))
+
+// 	for _, address := range peers.Addresses {
+// 		peers.PeerChan <- address
+// 	}
+
+// 	return peers
+// }
 
 func (p *Peers) HelloUniverse() {
 	batchSize := 1000
@@ -92,7 +107,7 @@ func (p *Peers) HelloUniverse() {
 
 		batch = append(batch, peer)
 
-		fmt.Printf("%d %s %s %s\n", peers, peer.ENS, peer.LoopringENS, peer.LoopringID)
+		fmt.Printf("%d %s %s %d\n", peers, peer.ENS, peer.LoopringENS, peer.LoopringID)
 		peers--
 
 		if len(batch) >= batchSize {
@@ -121,86 +136,51 @@ func (p *Peers) NewBlock(addresses []string) {
 	}
 }
 
-// SavePeersToJSON saves the Peers.Map to a JSON file as a slice of Peer objects and logs the count.
-// SavePeersToJSON saves the Peers.Map to a JSON file with specific fields and uses the int64 version of LoopringID.
-// SavePeersToJSON saves the Peers.Map to a JSON file as a slice of Peer objects, sorted by LoopringIDINT in ascending order.
-func (p *Peers) SavePeersToJSON(filename string) error {
-	p.Mu.RLock()
-	defer p.Mu.RUnlock()
+// InitializeFromEmbeddedJSON initializes the Map with data from the embedded peer.json file
+func (p *Peers) InitializeFromEmbeddedJSON() error {
+	var peerList []Peer
 
-	// Define a custom struct for serialization
-	type PeerOutput struct {
-		Address     string `json:"address"`
-		ENS         string `json:"ens"`
-		LoopringENS string `json:"loopringEns"`
-		LoopringID  int64  `json:"loopringId"`
+	// Unmarshal the embedded JSON into a slice of Peer structs
+	if err := json.Unmarshal(peerJSON, &peerList); err != nil {
+		return fmt.Errorf("failed to unmarshal embedded JSON: %w", err)
 	}
 
-	// Create a slice to hold the serialized Peer objects
-	var peersSlice []PeerOutput
-	for _, peer := range p.Map {
-		peersSlice = append(peersSlice, PeerOutput{
-			Address:     peer.Address,
-			ENS:         peer.ENS,
-			LoopringENS: peer.LoopringENS,
-			LoopringID:  peer.LoopringIDINT, // Use the int64 version of LoopringID
-		})
+	// Populate the Map and Addresses slice
+	for _, peer := range peerList {
+		p.Map[peer.Address] = &peer
+		p.Addresses = append(p.Addresses, peer.Address)
 	}
 
-	// Sort the slice by LoopringIDINT in ascending order
-	sort.Slice(peersSlice, func(i, j int) bool {
-		return peersSlice[i].LoopringID < peersSlice[j].LoopringID
-	})
-
-	// Log the number of peers
-	fmt.Printf("Number of peers to save: %d\n", len(peersSlice))
-
-	// Marshal the slice to JSON
-	data, err := json.MarshalIndent(peersSlice, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal peers to JSON: %w", err)
-	}
-
-	// Write the JSON data to a file
-	file, err := os.Create(filename)
-	if err != nil {
-		return fmt.Errorf("failed to create JSON file: %w", err)
-	}
-	defer file.Close()
-
-	if _, err := file.Write(data); err != nil {
-		return fmt.Errorf("failed to write JSON data to file: %w", err)
-	}
-
-	fmt.Printf("Peers saved to JSON file: %s\n", filename)
+	fmt.Println("Peers initialized from embedded JSON successfully.")
 	return nil
 }
 
-// UpdateLoopringIDInt updates the LoopringIDINT field in memory by converting LoopringID strings to integers.
-// Assigns -1 to LoopringIDINT if the LoopringID contains a ".".
-func (p *Peers) UpdateLoopringIDInt() error {
+func (p *Peers) SavePeersToDB() error {
 	p.Mu.RLock()
 	defer p.Mu.RUnlock()
 
+	// Convert the Map to a slice of Peer structs
+	var peerData []Peer
 	for _, peer := range p.Map {
-		// Check if LoopringID contains a "."
-		if peer.LoopringID == "." {
-			peer.LoopringIDINT = -1
-			continue
-		}
-
-		// Convert LoopringID string to int64
-		loopringIDInt, err := strconv.ParseInt(peer.LoopringID, 10, 64)
-		if err != nil {
-			peer.LoopringIDINT = -1
-			fmt.Printf("Failed to convert LoopringID '%s' to int for address '%s': %v\n", peer.LoopringID, peer.Address, err)
-			continue
-		}
-
-		// Update the in-memory map
-		peer.LoopringIDINT = loopringIDInt
+		peerData = append(peerData, *peer)
 	}
 
-	fmt.Println("LoopringIDINT field updated successfully in memory.")
+	// Insert the data into the database with the key "peer"
+	// Convert the slice of Peer structs to JSON-compatible format
+	var jsonData []map[string]any
+	for _, peer := range peerData {
+		jsonData = append(jsonData, map[string]any{
+			"address":     peer.Address,
+			"ens":         peer.ENS,
+			"loopringEns": peer.LoopringENS,
+			"loopringId":  peer.LoopringID,
+		})
+	}
+
+	if err := p.Db.Insert("peer", jsonData); err != nil {
+		return fmt.Errorf("failed to save peers to database: %w", err)
+	}
+
+	fmt.Println("Peers saved to database successfully.")
 	return nil
 }

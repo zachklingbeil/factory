@@ -30,84 +30,87 @@ func NewDatabase(dbName string) (*Database, error) {
 	return nil, fmt.Errorf("failed to connect to database '%s' after %d retries", dbName, maxRetries)
 }
 
-// DiskToMem converts tables into slices of structs.
-func (d *Database) DiskToMem(table string, result any) error {
-	query := fmt.Sprintf("SELECT * FROM %s", table)
-	rows, err := d.Query(query)
+func (db *Database) Consolidate() error {
+	newDB, err := NewDatabase("timefactory")
 	if err != nil {
-		return fmt.Errorf("query failed: %w", err)
+		return fmt.Errorf("failed to create or connect to database 'timefactory': %w", err)
 	}
-	defer rows.Close()
+	defer newDB.Close()
 
-	cols, err := rows.Columns()
+	// Create the table with columns key, value (as INTEGER), and jsonb
+	createTableQuery := `
+        CREATE TABLE IF NOT EXISTS data (
+            key TEXT PRIMARY KEY,
+            value INTEGER NOT NULL,
+            jsonb_data JSONB
+        );
+    `
+	_, err = newDB.Exec(createTableQuery)
 	if err != nil {
-		return fmt.Errorf("failed to get columns: %w", err)
+		return fmt.Errorf("failed to create table in database 'timefactory': %w", err)
 	}
 
-	colCount := len(cols)
-	jsonRows := make([]map[string]any, 0, 10000)
-	values := make([]any, colCount)
-	valuePtrs := make([]any, colCount)
-
-	for i := range values {
-		valuePtrs[i] = &values[i]
-	}
-
-	for rows.Next() {
-		rowMap := make(map[string]any, colCount)
-
-		if err := rows.Scan(valuePtrs...); err != nil {
-			return fmt.Errorf("scan failed: %w", err)
-		}
-
-		for i, col := range cols {
-			rowMap[col] = values[i]
-		}
-		jsonRows = append(jsonRows, rowMap)
-	}
-
-	if err := rows.Err(); err != nil {
-		return fmt.Errorf("iteration error: %w", err)
-	}
-
-	jsonData, err := json.Marshal(jsonRows)
-	if err != nil {
-		return fmt.Errorf("failed to marshal results to JSON: %w", err)
-	}
-	if err := json.Unmarshal(jsonData, result); err != nil {
-		return fmt.Errorf("failed to unmarshal JSON into result: %w", err)
-	}
+	fmt.Println("Database 'timefactory' and table 'data' created successfully.")
 	return nil
 }
 
-func (d *Database) ColumnToSlice(table string, column string, result any) error {
-	query := fmt.Sprintf("SELECT %s FROM %s", column, table)
-	rows, err := d.Query(query)
+func (db *Database) Insert(key string, data []map[string]any) error {
+	// Check if the key already exists and get the current value
+	selectQuery := `SELECT value FROM data WHERE key = $1;`
+	var currentValue int
+	err := db.QueryRow(selectQuery, key).Scan(&currentValue)
 	if err != nil {
-		return fmt.Errorf("query failed: %w", err)
-	}
-	defer rows.Close()
-
-	slice := make([]any, 0, 250000) // Preallocate a slice with an initial capacity
-	for rows.Next() {
-		var value any
-		if err := rows.Scan(&value); err != nil {
-			return fmt.Errorf("scan failed: %w", err)
+		if err != sql.ErrNoRows {
+			return fmt.Errorf("failed to query current value for key '%s': %w", key, err)
 		}
-		slice = append(slice, value)
+		// If no rows exist, start with value 0
+		currentValue = 0
 	}
 
-	if err := rows.Err(); err != nil {
-		return fmt.Errorf("iteration error: %w", err)
-	}
+	// Increment the value
+	newValue := currentValue + 1
 
-	// Marshal the slice into JSON and unmarshal it into the provided result
-	jsonData, err := json.Marshal(slice)
+	// Marshal the slice of structs into JSON
+	jsonbData, err := json.Marshal(data)
 	if err != nil {
-		return fmt.Errorf("failed to marshal results to JSON: %w", err)
+		return fmt.Errorf("failed to marshal jsonb data for key '%s': %w", key, err)
 	}
-	if err := json.Unmarshal(jsonData, result); err != nil {
-		return fmt.Errorf("failed to unmarshal JSON into result: %w", err)
+
+	// Insert or update the row in the database
+	insertQuery := `
+        INSERT INTO data (key, value, jsonb_data)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (key) DO UPDATE
+        SET value = $2, jsonb_data = EXCLUDED.jsonb_data;
+    `
+	_, err = db.Exec(insertQuery, key, newValue, jsonbData)
+	if err != nil {
+		return fmt.Errorf("failed to insert or update data for key '%s': %w", key, err)
 	}
+
+	fmt.Printf("Data for key '%s' inserted/updated successfully with value '%d'.\n", key, newValue)
 	return nil
+}
+
+func (db *Database) GetData(key string) ([]map[string]any, int, error) {
+	selectQuery := `SELECT value, jsonb_data FROM data WHERE key = $1;`
+
+	row := db.QueryRow(selectQuery, key)
+
+	var value int
+	var jsonbData []byte
+
+	if err := row.Scan(&value, &jsonbData); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, 0, fmt.Errorf("no data found for key '%s'", key)
+		}
+		return nil, 0, fmt.Errorf("failed to scan row for key '%s': %w", key, err)
+	}
+
+	var data []map[string]any
+	if err := json.Unmarshal(jsonbData, &data); err != nil {
+		return nil, 0, fmt.Errorf("failed to unmarshal jsonb data for key '%s': %w", key, err)
+	}
+
+	return data, value, nil
 }

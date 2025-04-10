@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -21,10 +22,11 @@ type Peers struct {
 }
 
 type Peer struct {
-	Address     string
-	ENS         string
-	LoopringENS string
-	LoopringID  string
+	Address       string
+	ENS           string
+	LoopringENS   string
+	LoopringID    string
+	LoopringIDINT int64
 }
 
 func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
@@ -39,7 +41,9 @@ func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
 	if err := peers.LoadPeers(); err != nil {
 		fmt.Printf("Error loading peers: %v\n", err)
 	}
-
+	if err := peers.UpdateLoopringIDInt(); err != nil {
+		fmt.Printf("Error updating LoopringIDInt: %v\n", err)
+	}
 	// Save the peers to a JSON file
 	if err := peers.SavePeersToJSON("peers.json"); err != nil {
 		fmt.Printf("Error saving peers to JSON: %v\n", err)
@@ -148,5 +152,34 @@ func (p *Peers) SavePeersToJSON(filename string) error {
 	}
 
 	fmt.Printf("Peers saved to JSON file: %s\n", filename)
+	return nil
+}
+
+// UpdateLoopringIDInt updates the LoopringIDInt column in the database by converting LoopringID strings to integers.
+func (p *Peers) UpdateLoopringIDInt() error {
+	p.Mu.RLock()
+	defer p.Mu.RUnlock()
+
+	for _, peer := range p.Map {
+		// Convert LoopringID string to int64
+		loopringIDInt, err := strconv.ParseInt(peer.LoopringID, 10, 64)
+		if err != nil {
+			fmt.Printf("Failed to convert LoopringID '%s' to int: %v\n", peer.LoopringID, err)
+			continue
+		}
+
+		// Update the database with the new value
+		query := "UPDATE peers SET loopring_id_int = ? WHERE address = ?"
+		_, err = p.Db.Exec(query, loopringIDInt, peer.Address)
+		if err != nil {
+			fmt.Printf("Failed to update LoopringIDInt for address '%s': %v\n", peer.Address, err)
+			continue
+		}
+
+		// Update the in-memory map
+		peer.LoopringIDINT = loopringIDInt
+	}
+
+	fmt.Println("LoopringIDInt column updated successfully.")
 	return nil
 }

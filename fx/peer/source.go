@@ -28,31 +28,40 @@ func (p *Peers) GetAddress(peer *Peer, dotEth string) {
 	peer.Address = p.Format(address.Hex())
 }
 
-// hex -> ENS [.eth]
+// hex -> ENS [.eth], "." for no ENS, "!" for errors
 func (p *Peers) GetENS(peer *Peer, address string) {
 	addr := common.HexToAddress(address)
-	if ensName, err := ens.ReverseResolve(p.Eth, addr); err != nil || ensName == "" {
-		peer.ENS = "." // Assign "." for errors or if no ENS name is found
-	} else {
-		peer.ENS = p.Format(ensName) // Assign the resolved ENS name
+	ensName, err := ens.ReverseResolve(p.Eth, addr)
+	if err != nil {
+		peer.ENS = "!"
+		return
 	}
+	if ensName == "" {
+		peer.ENS = "."
+		return
+	}
+	peer.ENS = p.Format(ensName)
 }
 
-// hex -> LoopringENS [.loopring.eth]
+// hex -> LoopringENS [.loopring.eth], "." for no LoopringENS, "!" for errors
 func (p *Peers) GetLoopringENS(peer *Peer, address string) {
 	url := fmt.Sprintf("https://api3.loopring.io/api/wallet/v3/resolveName?owner=%s", address)
 	var response struct {
 		Loopring string `json:"data"`
 	}
 	data, err := p.Json.In(url, "")
-	if err != nil || json.Unmarshal(data, &response) != nil || response.Loopring == "" {
-		peer.LoopringENS = "." // Assign "." for errors or if no Loopring ENS is found
+	if err != nil {
+		peer.LoopringENS = "!"
 		return
 	}
-	peer.LoopringENS = p.Format(response.Loopring) // Assign the resolved Loopring ENS
+	if json.Unmarshal(data, &response) != nil || response.Loopring == "" {
+		peer.LoopringENS = "."
+		return
+	}
+	peer.LoopringENS = p.Format(response.Loopring)
 }
 
-// hex -> LoopringId
+// hex -> LoopringId, -1 for no Loopring ID and errors
 func (p *Peers) GetLoopringID(peer *Peer, address string) {
 	url := fmt.Sprintf("https://api3.loopring.io/api/v3/account?owner=%s", address)
 	var response struct {
@@ -60,10 +69,10 @@ func (p *Peers) GetLoopringID(peer *Peer, address string) {
 	}
 	data, err := p.Json.In(url, "")
 	if err != nil || json.Unmarshal(data, &response) != nil || response.ID == 0 {
-		peer.LoopringID = -1 // Assign -1 for errors or if no Loopring ID is found
+		peer.LoopringID = -1
 		return
 	}
-	peer.LoopringID = response.ID // Assign the resolved Loopring ID
+	peer.LoopringID = response.ID
 }
 
 // LoopringId -> hex

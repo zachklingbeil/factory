@@ -23,12 +23,11 @@ func (p *Peers) LoadPeers() error {
 		if err := rows.Scan(&peer.Address, &peer.ENS, &peer.LoopringENS, &peer.LoopringID); err != nil {
 			return fmt.Errorf("failed to scan peer row: %w", err)
 		}
-		p.Map[peer.Address] = &peer
 
-		// Check for missing or invalid fields
+		p.Map[peer.Address] = &peer
 		if peer.ENS == "" || peer.ENS == "!" ||
 			peer.LoopringENS == "" || peer.LoopringENS == "!" ||
-			peer.LoopringID == -1 { // Use -1 to indicate invalid LoopringID
+			peer.LoopringID == -1 {
 			addresses = append(addresses, peer.Address)
 		}
 	}
@@ -38,7 +37,7 @@ func (p *Peers) LoadPeers() error {
 	}
 
 	p.Addresses = addresses
-	fmt.Printf("%d peers loaded\n", len(p.Map))
+	fmt.Printf("%d peers\n", len(p.Map))
 	return nil
 }
 
@@ -62,14 +61,11 @@ func (p *Peers) SavePeers(batch []*Peer) error {
 		placeholders += fmt.Sprintf("($%d, $%d, $%d, $%d)", i*4+1, i*4+2, i*4+3, i*4+4)
 		values = append(values, peer.Address, peer.ENS, peer.LoopringENS, peer.LoopringID)
 	}
-
 	query := fmt.Sprintf(queryTemplate, placeholders)
-
 	_, err := p.Db.Exec(query, values...)
 	if err != nil {
 		return fmt.Errorf("failed to save peers batch: %w", err)
 	}
-
 	fmt.Printf("%d peers saved to the database\n", len(batch))
 	return nil
 }

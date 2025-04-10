@@ -41,7 +41,6 @@ func NewPeers(json *fx.JSON, eth *ethclient.Client, db *fx.Database) *Peers {
 	}
 
 	peers.PeerChan = make(chan string, len(peers.Addresses))
-
 	for _, address := range peers.Addresses {
 		peers.PeerChan <- address
 	}
@@ -54,7 +53,7 @@ func (p *Peers) NewBlock(addresses []string) {
 	defer p.Mu.Unlock()
 
 	peers := len(addresses)
-	fmt.Printf("%d peers from new block\n", peers)
+	fmt.Printf("%d new peers\n", peers)
 
 	for _, address := range addresses {
 		if _, exists := p.Map[address]; !exists {
@@ -96,13 +95,11 @@ func (p *Peers) HelloUniverse() {
 			p.GetENS(peer, peer.Address)
 			p.GetLoopringENS(peer, peer.Address)
 			p.GetLoopringID(peer, peer.Address)
-
 			batch = append(batch, peer)
 
 			fmt.Printf("%d %s %s %d\n", peers, peer.ENS, peer.LoopringENS, peer.LoopringID)
 			peers--
 		}
 	}
-
 	fmt.Println("Hello Universe")
 }

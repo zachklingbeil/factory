@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 )
 
 func (p *Peers) LoadPeers() error {
@@ -42,6 +43,7 @@ func (p *Peers) LoadPeers() error {
 	fmt.Printf("%d peers\n", len(p.Map))
 	return nil
 }
+
 func (p *Peers) OutputPeersAsJSON() error {
 	query := `
         SELECT address, ens, loopring_ens, loopring_id FROM peers
@@ -52,23 +54,47 @@ func (p *Peers) OutputPeersAsJSON() error {
 	}
 	defer rows.Close()
 
-	// Create a slice to hold the Peer objects
-	var peers []Peer
+	// Create a slice to hold the JSON Peer objects
+	var jsonPeers []struct {
+		Address     string `json:"address"`
+		ENS         string `json:"ens"`
+		LoopringENS string `json:"loopring_ens"`
+		LoopringID  int64  `json:"loopring_id"`
+	}
 
 	for rows.Next() {
 		var peer Peer
-		if err := rows.Scan(&peer.Address, &peer.ENS, &peer.LoopringENS, &peer.LoopringID); err != nil {
+		var loopringIDStr string
+		if err := rows.Scan(&peer.Address, &peer.ENS, &peer.LoopringENS, &loopringIDStr); err != nil {
 			return fmt.Errorf("failed to scan peer row: %w", err)
 		}
-		peers = append(peers, peer)
+
+		// Convert LoopringID from string to int64
+		loopringID, err := strconv.ParseInt(loopringIDStr, 10, 64)
+		if err != nil {
+			return fmt.Errorf("failed to convert LoopringID to int64: %w", err)
+		}
+
+		// Append to the JSON slice
+		jsonPeers = append(jsonPeers, struct {
+			Address     string `json:"address"`
+			ENS         string `json:"ens"`
+			LoopringENS string `json:"loopring_ens"`
+			LoopringID  int64  `json:"loopring_id"`
+		}{
+			Address:     peer.Address,
+			ENS:         peer.ENS,
+			LoopringENS: peer.LoopringENS,
+			LoopringID:  loopringID,
+		})
 	}
 
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("error iterating over peer rows: %w", err)
 	}
 
-	// Convert the slice of Peer objects to JSON
-	jsonData, err := json.MarshalIndent(peers, "", "  ")
+	// Convert the slice of JSON Peer objects to JSON
+	jsonData, err := json.MarshalIndent(jsonPeers, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal peers to JSON: %w", err)
 	}
@@ -87,6 +113,7 @@ func (p *Peers) OutputPeersAsJSON() error {
 	fmt.Println("Peers table exported to peers.json")
 	return nil
 }
+
 func (p *Peers) SavePeers(peers []*Peer) error {
 	query := `
     INSERT INTO peers (address, ens, loopring_ens, loopring_id)

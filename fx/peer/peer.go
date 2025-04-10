@@ -156,6 +156,7 @@ func (p *Peers) SavePeersToJSON(filename string) error {
 }
 
 // UpdateLoopringIDInt updates the LoopringIDInt column in the database by converting LoopringID strings to integers.
+// UpdateLoopringIDInt updates the LoopringIDINT field in memory by converting LoopringID strings to integers.
 func (p *Peers) UpdateLoopringIDInt() error {
 	p.Mu.RLock()
 	defer p.Mu.RUnlock()
@@ -168,18 +169,10 @@ func (p *Peers) UpdateLoopringIDInt() error {
 			continue
 		}
 
-		// Update the database with the new value
-		query := "UPDATE peers SET loopring_id_int = ? WHERE address = ?"
-		_, err = p.Db.Exec(query, loopringIDInt, peer.Address)
-		if err != nil {
-			fmt.Printf("Failed to update LoopringIDInt for address '%s': %v\n", peer.Address, err)
-			continue
-		}
-
 		// Update the in-memory map
 		peer.LoopringIDINT = loopringIDInt
 	}
 
-	fmt.Println("LoopringIDInt column updated successfully.")
+	fmt.Println("LoopringIDINT field updated successfully in memory.")
 	return nil
 }

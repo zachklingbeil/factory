@@ -24,7 +24,7 @@ type Factory struct {
 	When *sync.Cond    // Signal
 }
 
-func NewFactory(dbName string) (*Factory, error) {
+func Init(dbName string) (*Factory, error) {
 	ctx := context.Background()
 	http := &http.Client{}
 	json := fx.Json(*http, ctx)

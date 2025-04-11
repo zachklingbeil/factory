@@ -3,6 +3,7 @@ package factory
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
 
@@ -24,15 +25,22 @@ type Factory struct {
 	When *sync.Cond    // Signal
 }
 
-func Assemble(dbName string) (*Factory, error) {
+func Assemble(dbName string) *Factory {
 	ctx := context.Background()
 	http := &http.Client{}
 	json := fx.Json(*http, ctx)
+
 	rpc, eth, err := fx.Node(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Ethereum node: %w", err)
+		log.Fatalf("Error creating Ethereum node: %v", err)
+		return nil
 	}
-	db, _ := fx.NewDatabase(dbName)
+
+	db, err := fx.Connect(dbName)
+	if err != nil {
+		log.Fatalf("Error creating database: %v", err)
+		return nil
+	}
 	fmt.Printf("factory [ %s ]\n", dbName)
 
 	mu := &sync.Mutex{}
@@ -47,5 +55,5 @@ func Assemble(dbName string) (*Factory, error) {
 		Rw:   &sync.RWMutex{},
 		When: sync.NewCond(mu),
 	}
-	return factory, nil
+	return factory
 }

@@ -10,7 +10,7 @@ type Database struct {
 	*sql.DB
 }
 
-func NewDatabase(dbName string) (*Database, error) {
+func Connect(dbName string) (*Database, error) {
 	connStr := fmt.Sprintf("user=postgres password=postgres dbname=%s host=postgres port=5432 sslmode=disable", dbName)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {

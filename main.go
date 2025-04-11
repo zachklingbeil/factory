@@ -21,7 +21,7 @@ type Factory struct {
 	Json *fx.JSON
 	Mu   *sync.Mutex   // Mutex for exclusive access
 	Rw   *sync.RWMutex // RWMutex for read-heavy operations
-	Cond *sync.Cond    // Signal
+	When *sync.Cond    // Signal
 }
 
 func NewFactory(dbName string) (*Factory, error) {

@@ -46,7 +46,7 @@ func NewFactory(dbName string) (*Factory, error) {
 		Db:   db,
 		Mu:   mu,
 		Rw:   &sync.RWMutex{},
-		Cond: sync.NewCond(mu),
+		When: sync.NewCond(mu),
 	}
 	return factory, nil
 }

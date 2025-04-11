@@ -41,7 +41,7 @@ func Assemble(dbName string) *Factory {
 		log.Fatalf("Error creating database: %v", err)
 		return nil
 	}
-	fmt.Printf("factory [ %s ]\n", dbName)
+	fmt.Printf("[ %s ]\n", dbName)
 
 	mu := &sync.Mutex{}
 	factory := &Factory{

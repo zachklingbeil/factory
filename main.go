@@ -19,9 +19,9 @@ type Factory struct {
 	Http *http.Client
 	Rpc  *rpc.Client
 	Json *fx.JSON
-	Mu   sync.Mutex   // Mutex for exclusive access
-	Rw   sync.RWMutex // RWMutex for read-heavy operations
-
+	Mu   *sync.Mutex   // Mutex for exclusive access
+	Rw   *sync.RWMutex // RWMutex for read-heavy operations
+	Cond *sync.Cond    // Signal
 }
 
 func NewFactory(dbName string) (*Factory, error) {
@@ -36,6 +36,7 @@ func NewFactory(dbName string) (*Factory, error) {
 	fmt.Printf("factory [ %s ]\n", dbName)
 	// peer := peer.NewPeers(json, eth, db)
 
+	mu := &sync.Mutex{}
 	factory := &Factory{
 		Rpc:  rpc,
 		Eth:  eth,
@@ -43,6 +44,9 @@ func NewFactory(dbName string) (*Factory, error) {
 		Json: json,
 		Ctx:  ctx,
 		Db:   db,
+		Mu:   mu,
+		Rw:   &sync.RWMutex{},
+		Cond: sync.NewCond(mu),
 	}
 	return factory, nil
 }

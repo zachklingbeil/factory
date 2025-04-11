@@ -45,11 +45,7 @@ func (p *Peers) GetLoopringENS(peer *Peer, address string) {
 		Loopring string `json:"data"`
 	}
 	data, err := p.Json.In(url, "")
-	if err != nil {
-		peer.LoopringENS = "!"
-		return
-	}
-	if json.Unmarshal(data, &response) != nil || response.Loopring == "" {
+	if err != nil || json.Unmarshal(data, &response) != nil || response.Loopring == "" {
 		peer.LoopringENS = "."
 		return
 	}

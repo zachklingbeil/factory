@@ -31,16 +31,11 @@ func (p *Peers) GetAddress(peer *Peer, dotEth string) {
 // hex -> ENS [.eth], "." for no ENS, "!" for errors
 func (p *Peers) GetENS(peer *Peer, address string) {
 	addr := common.HexToAddress(address)
-	ensName, err := ens.ReverseResolve(p.Eth, addr)
-	if err != nil {
-		peer.ENS = "!"
-		return
+	if ensName, err := ens.ReverseResolve(p.Eth, addr); err != nil || ensName == "" {
+		peer.ENS = "." // Assign "." for errors or if no ENS name is found
+	} else {
+		peer.ENS = p.Format(ensName) // Assign the resolved ENS name
 	}
-	if ensName == "" {
-		peer.ENS = "."
-		return
-	}
-	peer.ENS = p.Format(ensName)
 }
 
 // hex -> LoopringENS [.loopring.eth], "." for no LoopringENS, "!" for errors

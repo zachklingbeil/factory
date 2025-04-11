@@ -24,7 +24,7 @@ type Factory struct {
 	When *sync.Cond    // Signal
 }
 
-func Init(dbName string) (*Factory, error) {
+func Assemble(dbName string) (*Factory, error) {
 	ctx := context.Background()
 	http := &http.Client{}
 	json := fx.Json(*http, ctx)
@@ -34,7 +34,6 @@ func Init(dbName string) (*Factory, error) {
 	}
 	db, _ := fx.NewDatabase(dbName)
 	fmt.Printf("factory [ %s ]\n", dbName)
-	// peer := peer.NewPeers(json, eth, db)
 
 	mu := &sync.Mutex{}
 	factory := &Factory{

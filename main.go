@@ -25,7 +25,7 @@ type Factory struct {
 	When *sync.Cond    // Signal
 }
 
-func Assemble(dbName string) *Factory {
+func Assemble(dbName, redispassword string) *Factory {
 	ctx := context.Background()
 	http := &http.Client{}
 	json := fx.Json(*http, ctx)
@@ -36,7 +36,7 @@ func Assemble(dbName string) *Factory {
 		return nil
 	}
 
-	db, err := fx.Connect(dbName, ctx)
+	db, err := fx.Connect(dbName, redispassword, ctx)
 	if err != nil {
 		log.Fatalf("Error creating database: %v", err)
 		return nil

@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -34,11 +33,10 @@ func ConnectPostgres(dbName string) (*sql.DB, error) {
 	return nil, fmt.Errorf("failed to connect to database '%s' after %d retries", dbName, maxRetries)
 }
 
-func ConnectRedis(ctx context.Context) (*redis.Client, error) {
-	pw := os.Getenv("REDIS_PASSWORD")
+func ConnectRedis(password string, ctx context.Context) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:          "redis:6379",
-		Password:      pw,
+		Password:      password,
 		DB:            0,
 		Protocol:      3,
 		UnstableResp3: true,
@@ -50,13 +48,13 @@ func ConnectRedis(ctx context.Context) (*redis.Client, error) {
 	return client, nil
 }
 
-func Connect(dbName string, ctx context.Context) (*Database, error) {
+func Connect(dbName, redispassword string, ctx context.Context) (*Database, error) {
 	db, err := ConnectPostgres(dbName)
 	if err != nil {
 		return nil, err
 	}
 
-	redis, err := ConnectRedis(ctx)
+	redis, err := ConnectRedis(redispassword, ctx)
 	if err != nil {
 		return nil, err
 	}

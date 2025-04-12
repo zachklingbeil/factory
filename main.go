@@ -36,7 +36,7 @@ func Assemble(dbName, redispassword string) *Factory {
 		return nil
 	}
 
-	db, err := fx.Connect(dbName, redispassword, ctx)
+	db, err := fx.Connect(dbName)
 	if err != nil {
 		log.Fatalf("Error creating database: %v", err)
 		return nil

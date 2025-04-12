@@ -25,7 +25,7 @@ type Factory struct {
 	When *sync.Cond    // Signal
 }
 
-func Assemble(dbName, redispassword string) *Factory {
+func Assemble(dbName string) *Factory {
 	ctx := context.Background()
 	http := &http.Client{}
 	json := fx.Json(*http, ctx)

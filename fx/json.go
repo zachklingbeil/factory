@@ -92,18 +92,18 @@ func (j *JSON) InOpt(url, apiKey string, mode int) (map[string]any, error) {
 	// Apply flattening and/or Cleanup based on the mode
 	switch mode {
 	case 0: // Flatten and Cleanup
-		data = FlattenMap(data, "")
-		data = Cleanup(data)
+		data = j.FlattenMap(data, "")
+		data = j.Cleanup(data)
 	case 1: // Flatten only
-		data = FlattenMap(data, "")
+		data = j.FlattenMap(data, "")
 	case 2: // Cleanup only
-		data = Cleanup(data)
+		data = j.Cleanup(data)
 	}
 
 	return data, nil
 }
 
-func FlattenMap(input map[string]any, prefix string) map[string]any {
+func (j *JSON) FlattenMap(input map[string]any, prefix string) map[string]any {
 	flatMap := make(map[string]any)
 
 	for key, value := range input {
@@ -114,12 +114,12 @@ func FlattenMap(input map[string]any, prefix string) map[string]any {
 
 		switch v := value.(type) {
 		case map[string]any:
-			maps.Copy(flatMap, FlattenMap(v, newKey))
+			maps.Copy(flatMap, j.FlattenMap(v, newKey))
 		case []any:
 			for i, item := range v {
 				arrayKey := fmt.Sprintf("%s[%d]", newKey, i)
 				if nestedMap, ok := item.(map[string]any); ok {
-					maps.Copy(flatMap, FlattenMap(nestedMap, arrayKey))
+					maps.Copy(flatMap, j.FlattenMap(nestedMap, arrayKey))
 				} else {
 					flatMap[arrayKey] = item
 				}
@@ -131,7 +131,7 @@ func FlattenMap(input map[string]any, prefix string) map[string]any {
 	return flatMap
 }
 
-func Cleanup(data map[string]any) map[string]any {
+func (j *JSON) Cleanup(data map[string]any) map[string]any {
 	cleaned := make(map[string]any)
 	for key, value := range data {
 		switch v := value.(type) {
@@ -144,7 +144,7 @@ func Cleanup(data map[string]any) map[string]any {
 				cleaned[key] = v
 			}
 		case map[string]any:
-			nested := Cleanup(v)
+			nested := j.Cleanup(v)
 			if len(nested) > 0 {
 				cleaned[key] = nested
 			}

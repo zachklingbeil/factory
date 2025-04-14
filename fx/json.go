@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"sync"
 	"time"
@@ -73,6 +74,87 @@ func (j *JSON) In(url, apiKey string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 	return body, nil
+}
+
+func (j *JSON) InOpt(url, apiKey string, mode int) (map[string]any, error) {
+	// Fetch the response body using the existing In method
+	body, err := j.In(url, apiKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch data: %w", err)
+	}
+
+	// Unmarshal the response body into a map
+	var data map[string]any
+	if err := json.Unmarshal(body, &data); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	// Apply flattening and/or Cleanup based on the mode
+	switch mode {
+	case 0: // Flatten and Cleanup
+		data = FlattenMap(data, "")
+		data = Cleanup(data)
+	case 1: // Flatten only
+		data = FlattenMap(data, "")
+	case 2: // Cleanup only
+		data = Cleanup(data)
+	}
+
+	return data, nil
+}
+
+func FlattenMap(input map[string]any, prefix string) map[string]any {
+	flatMap := make(map[string]any)
+
+	for key, value := range input {
+		newKey := key
+		if prefix != "" {
+			newKey = prefix + "." + key
+		}
+
+		switch v := value.(type) {
+		case map[string]any:
+			maps.Copy(flatMap, FlattenMap(v, newKey))
+		case []any:
+			for i, item := range v {
+				arrayKey := fmt.Sprintf("%s[%d]", newKey, i)
+				if nestedMap, ok := item.(map[string]any); ok {
+					maps.Copy(flatMap, FlattenMap(nestedMap, arrayKey))
+				} else {
+					flatMap[arrayKey] = item
+				}
+			}
+		default:
+			flatMap[newKey] = v
+		}
+	}
+	return flatMap
+}
+
+func Cleanup(data map[string]any) map[string]any {
+	cleaned := make(map[string]any)
+	for key, value := range data {
+		switch v := value.(type) {
+		case string:
+			if v != "" {
+				cleaned[key] = v
+			}
+		case []any:
+			if len(v) > 0 {
+				cleaned[key] = v
+			}
+		case map[string]any:
+			nested := Cleanup(v)
+			if len(nested) > 0 {
+				cleaned[key] = nested
+			}
+		default:
+			if v != nil {
+				cleaned[key] = v
+			}
+		}
+	}
+	return cleaned
 }
 
 // Out writes single response for http requests, using a function to source data and a locker to synchronize access or an HTTP 500 error when the input function fails or JSON encoding fails.

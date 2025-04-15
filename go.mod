@@ -3,7 +3,7 @@ module github.com/zachklingbeil/factory
 go 1.24.2
 
 require (
-	github.com/ethereum/go-ethereum v1.15.7
+	github.com/ethereum/go-ethereum v1.15.8
 	github.com/lib/pq v1.10.9
 )
 

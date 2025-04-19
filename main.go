@@ -36,7 +36,7 @@ func Assemble(dbName string) *Factory {
 		return nil
 	}
 
-	db, err := fx.Connect(dbName)
+	db, err := fx.Connect(dbName, ctx)
 	if err != nil {
 		log.Fatalf("Error creating database: %v", err)
 		return nil

@@ -27,10 +27,12 @@ func ConnectRedis(ctx context.Context) (*redis.Client, error) {
 }
 
 // Loop loads all data from the specified Redis DB into value, then starts a goroutine to periodically save value back to Redis.
-func (db *Database) Loop(value map[any]any, distance time.Duration) error {
-	if err := db.Past(value); err != nil {
-		return err
+func (db *Database) Loop(distance time.Duration) error {
+	value, err := db.Past()
+	if err != nil {
+		return fmt.Errorf("failed to load data from Redis: %w", err)
 	}
+
 	go db.Present(value, distance)
 	return nil
 }
@@ -66,12 +68,13 @@ func (db *Database) Present(value map[any]any, distance time.Duration) {
 	}
 }
 
-// Past loads all keys into a map.
-func (db *Database) Past(Map map[any]any) error {
+// Past loads all keys from Redis and returns a map[any]any.
+func (db *Database) Past() (map[any]any, error) {
 	ctx := *db.Ctx
 	if err := db.Redis.Do(ctx, "SELECT", 0).Err(); err != nil {
-		return err
+		return nil, err
 	}
+	result := make(map[any]any)
 	db.Mu.Lock()
 	defer db.Mu.Unlock()
 	iter := db.Redis.Scan(ctx, 0, "*", 0).Iterator()
@@ -83,16 +86,16 @@ func (db *Database) Past(Map map[any]any) error {
 		}
 		valueJSON, err := db.Redis.Get(ctx, redisKey).Bytes()
 		if err != nil {
-			return err
+			return nil, err
 		}
 		var value any
 		if err := json.Unmarshal(valueJSON, &value); err != nil {
-			return err
+			return nil, err
 		}
-		Map[key] = value
+		result[key] = value
 	}
 	if err := iter.Err(); err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return result, nil
 }

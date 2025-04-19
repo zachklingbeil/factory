@@ -10,20 +10,6 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type Zero struct {
-	Block       uint64 `json:"block"`
-	Year        uint8  `json:"year"`
-	Month       uint8  `json:"month"`
-	Day         uint8  `json:"day"`
-	Hour        uint8  `json:"hour"`
-	Minute      uint8  `json:"minute"`
-	Second      uint8  `json:"second"`
-	Millisecond uint16 `json:"millisecond"`
-	Index       uint16 `json:"index"`
-}
-
-type One any
-
 func ConnectRedis(ctx context.Context) (*redis.Client, error) {
 	pw := os.Getenv("REDIS_PASSWORD")
 	client := redis.NewClient(&redis.Options{
@@ -41,7 +27,7 @@ func ConnectRedis(ctx context.Context) (*redis.Client, error) {
 }
 
 // Loop loads all data from the specified Redis DB into value, then starts a goroutine to periodically save value back to Redis.
-func (db *Database) Loop(value map[Zero]One, distance time.Duration) error {
+func (db *Database) Loop(value map[any]any, distance time.Duration) error {
 	if err := db.Past(value); err != nil {
 		return err
 	}
@@ -50,7 +36,7 @@ func (db *Database) Loop(value map[Zero]One, distance time.Duration) error {
 }
 
 // Present saves the given map to Redis every distance until db.Ctx is cancelled, using the specified Redis DB.
-func (db *Database) Present(value map[Zero]One, distance time.Duration) {
+func (db *Database) Present(value map[any]any, distance time.Duration) {
 	ticker := time.NewTicker(distance)
 	defer ticker.Stop()
 	ctx := *db.Ctx
@@ -80,8 +66,8 @@ func (db *Database) Present(value map[Zero]One, distance time.Duration) {
 	}
 }
 
-// Past loads all JSON keys (no prefix) from the specified Redis DB into the given map.
-func (db *Database) Past(Map map[Zero]One) error {
+// Past loads all keys into a map.
+func (db *Database) Past(Map map[any]any) error {
 	ctx := *db.Ctx
 	if err := db.Redis.Do(ctx, "SELECT", 0).Err(); err != nil {
 		return err
@@ -91,7 +77,7 @@ func (db *Database) Past(Map map[Zero]One) error {
 	iter := db.Redis.Scan(ctx, 0, "*", 0).Iterator()
 	for iter.Next(ctx) {
 		redisKey := iter.Val()
-		var key Zero
+		var key any
 		if err := json.Unmarshal([]byte(redisKey), &key); err != nil {
 			continue
 		}
@@ -99,7 +85,7 @@ func (db *Database) Past(Map map[Zero]One) error {
 		if err != nil {
 			return err
 		}
-		var value One
+		var value any
 		if err := json.Unmarshal(valueJSON, &value); err != nil {
 			return err
 		}

@@ -20,9 +20,9 @@ type Factory struct {
 	Http *http.Client
 	Rpc  *rpc.Client
 	Json *fx.JSON
-	Mu   *sync.Mutex   // Mutex for exclusive access
-	Rw   *sync.RWMutex // RWMutex for read-heavy operations
-	When *sync.Cond    // Signal
+	Mu   *sync.Mutex
+	Rw   *sync.RWMutex
+	When *sync.Cond
 }
 
 func Assemble(dbName string) *Factory {
@@ -33,28 +33,29 @@ func Assemble(dbName string) *Factory {
 	rpc, eth, err := fx.Node(ctx)
 	if err != nil {
 		log.Fatalf("Error creating Ethereum node: %v", err)
-		return nil
 	}
 
-	db, err := fx.Connect(dbName, ctx)
+	db, err := fx.Connect(ctx, dbName)
 	if err != nil {
 		log.Fatalf("Error creating database: %v", err)
-		return nil
 	}
 
 	fmt.Printf("[ %s ]\n", dbName)
 
 	mu := &sync.Mutex{}
+	rw := &sync.RWMutex{}
+	when := sync.NewCond(mu)
+
 	factory := &Factory{
-		Rpc:  rpc,
-		Eth:  eth,
-		Http: http,
-		Json: json,
 		Ctx:  ctx,
 		Db:   db,
+		Eth:  eth,
+		Http: http,
+		Rpc:  rpc,
+		Json: json,
 		Mu:   mu,
-		Rw:   &sync.RWMutex{},
-		When: sync.NewCond(mu),
+		Rw:   rw,
+		When: when,
 	}
 	return factory
 }

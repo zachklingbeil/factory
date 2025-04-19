@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"maps"
 	"net/http"
 	"sync"
 	"time"
@@ -76,85 +75,79 @@ func (j *JSON) In(url, apiKey string) ([]byte, error) {
 	return body, nil
 }
 
-func (j *JSON) InOpt(url, apiKey string, mode int) (map[string]any, error) {
-	// Fetch the response body using the existing In method
-	body, err := j.In(url, apiKey)
+// In executes an HTTP GET request, decodes the JSON response, flattens and cleans it, and returns map[string]any.
+func (j *JSON) Simple(url, apiKey string) (map[string]any, error) {
+	req, err := http.NewRequestWithContext(j.CTX, "GET", url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch data: %w", err)
+		return nil, fmt.Errorf("failed to create request for URL %s: %w", url, err)
 	}
-
-	// Unmarshal the response body into a map
-	var data map[string]any
-	if err := json.Unmarshal(body, &data); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	if apiKey != "" {
+		req.Header.Set("X-API-KEY", apiKey)
 	}
-
-	// Apply flattening and/or Cleanup based on the mode
-	switch mode {
-	case 0: // Flatten and Cleanup
-		data = j.Flat(data, "")
-		data = j.Cleanup(data)
-	case 1: // Flatten only
-		data = j.Flat(data, "")
-	case 2: // Cleanup only
-		data = j.Cleanup(data)
+	resp, err := j.HTTP.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
-
-	return data, nil
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code %d", resp.StatusCode)
+	}
+	if resp.Body == nil || resp.ContentLength == 0 {
+		return nil, fmt.Errorf("empty response body")
+	}
+	var raw map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+		return nil, fmt.Errorf("failed to decode JSON: %w", err)
+	}
+	result := j.Simplify(raw, "")
+	return result, nil
 }
 
-func (j *JSON) Flat(input map[string]any, prefix string) map[string]any {
+// FlattenAndClean flattens a nested map and removes empty strings, empty slices, and empty maps.
+func (j *JSON) Simplify(input map[string]any, prefix string) map[string]any {
 	flatMap := make(map[string]any)
-
-	for key, value := range input {
-		newKey := key
-		if prefix != "" {
-			newKey = prefix + "." + key
-		}
-
-		switch v := value.(type) {
-		case map[string]any:
-			maps.Copy(flatMap, j.Flat(v, newKey))
-		case []any:
-			for i, item := range v {
-				arrayKey := fmt.Sprintf("%s[%d]", newKey, i)
-				if nestedMap, ok := item.(map[string]any); ok {
-					maps.Copy(flatMap, j.Flat(nestedMap, arrayKey))
-				} else {
-					flatMap[arrayKey] = item
+	var flatten func(map[string]any, string)
+	flatten = func(m map[string]any, pfx string) {
+		for key, value := range m {
+			newKey := key
+			if pfx != "" {
+				newKey = pfx + "." + key
+			}
+			switch v := value.(type) {
+			case map[string]any:
+				flatten(v, newKey)
+			case []any:
+				for i, item := range v {
+					arrayKey := fmt.Sprintf("%s[%d]", newKey, i)
+					if nestedMap, ok := item.(map[string]any); ok {
+						flatten(nestedMap, arrayKey)
+					} else if !isEmpty(item) {
+						flatMap[arrayKey] = item
+					}
+				}
+			default:
+				if !isEmpty(v) {
+					flatMap[newKey] = v
 				}
 			}
-		default:
-			flatMap[newKey] = v
 		}
 	}
+	flatten(input, prefix)
 	return flatMap
 }
 
-func (j *JSON) Cleanup(data map[string]any) map[string]any {
-	cleaned := make(map[string]any)
-	for key, value := range data {
-		switch v := value.(type) {
-		case string:
-			if v != "" {
-				cleaned[key] = v
-			}
-		case []any:
-			if len(v) > 0 {
-				cleaned[key] = v
-			}
-		case map[string]any:
-			nested := j.Cleanup(v)
-			if len(nested) > 0 {
-				cleaned[key] = nested
-			}
-		default:
-			if v != nil {
-				cleaned[key] = v
-			}
-		}
+// isEmpty checks if a value is an empty string, empty slice, or empty map.
+func isEmpty(v any) bool {
+	switch val := v.(type) {
+	case string:
+		return val == ""
+	case []any:
+		return len(val) == 0
+	case map[string]any:
+		return len(val) == 0
+	default:
+		return v == nil
 	}
-	return cleaned
 }
 
 // Out writes single response for http requests, using a function to source data and a locker to synchronize access or an HTTP 500 error when the input function fails or JSON encoding fails.

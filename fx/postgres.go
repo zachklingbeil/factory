@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
+	"sync"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -13,6 +13,9 @@ import (
 type Database struct {
 	*sql.DB
 	Redis *redis.Client
+	Mu    *sync.Mutex
+	Rw    *sync.RWMutex
+	Ctx   *context.Context
 }
 
 func ConnectPostgres(dbName string) (*sql.DB, error) {
@@ -34,23 +37,8 @@ func ConnectPostgres(dbName string) (*sql.DB, error) {
 	return nil, fmt.Errorf("failed to connect to database '%s' after %d retries", dbName, maxRetries)
 }
 
-func ConnectRedis(ctx context.Context) (*redis.Client, error) {
-	pw := os.Getenv("REDIS_PASSWORD")
-	client := redis.NewClient(&redis.Options{
-		Addr:          "redis:6379",
-		Password:      pw,
-		DB:            0,
-		Protocol:      3,
-		UnstableResp3: true,
-	})
-	if _, err := client.Ping(ctx).Result(); err != nil {
-		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
-	}
-	fmt.Println("Connected to Redis")
-	return client, nil
-}
-
-func Connect(dbName string, ctx context.Context) (*Database, error) {
+// Connect creates a Database struct with a Redis client for the specified DB number.
+func Connect(ctx context.Context, dbName string) (*Database, error) {
 	db, err := ConnectPostgres(dbName)
 	if err != nil {
 		return nil, err
@@ -61,7 +49,7 @@ func Connect(dbName string, ctx context.Context) (*Database, error) {
 		return nil, err
 	}
 
-	fmt.Println("Connected to PostgreSQL and Redis successfully")
+	fmt.Printf("Connected to PostgreSQL and Redis (DB) successfully\n")
 	return &Database{
 		DB:    db,
 		Redis: redis,

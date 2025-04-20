@@ -2,10 +2,10 @@ package factory
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -25,7 +25,7 @@ type Factory struct {
 	When *sync.Cond
 }
 
-func Assemble(dbName string) *Factory {
+func Assemble(dbName string, distance time.Duration) *Factory {
 	ctx := context.Background()
 	http := &http.Client{}
 	json := fx.Json(*http, ctx)
@@ -34,17 +34,14 @@ func Assemble(dbName string) *Factory {
 	if err != nil {
 		log.Fatalf("Error creating Ethereum node: %v", err)
 	}
-
-	db, err := fx.Connect(ctx, dbName)
-	if err != nil {
-		log.Fatalf("Error creating database: %v", err)
-	}
-
-	fmt.Printf("[ %s ]\n", dbName)
-
 	mu := &sync.Mutex{}
 	rw := &sync.RWMutex{}
 	when := sync.NewCond(mu)
+
+	db, err := fx.Connect(dbName, distance, ctx, mu, rw)
+	if err != nil {
+		log.Fatalf("Error connecting to database: %v", err)
+	}
 
 	factory := &Factory{
 		Ctx:  ctx,

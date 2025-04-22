@@ -72,3 +72,73 @@ func ConnectRedis(ctx context.Context) (*redis.Client, error) {
 	}
 	return client, nil
 }
+
+// // Loop loads all data from Redis into a map, starts Present as a goroutine, and returns the map.
+// func (db *Database) Loop(distance time.Duration) error {
+// 	if err := db.Past(); err != nil {
+// 		return fmt.Errorf("failed to load data from Redis: %w", err)
+// 	}
+// 	go db.Present(distance)
+// 	return nil
+// }
+
+// // Present saves the Circuit's One map to Redis every distance until the context is cancelled.
+// func (db *Database) Present(distance time.Duration) {
+// 	ticker := time.NewTicker(distance)
+// 	defer ticker.Stop()
+// 	ctx := db.Ctx
+// 	for {
+// 		select {
+// 		case <-ctx.Done():
+// 			return
+// 		case <-ticker.C:
+// 			if err := db.Rdb.Do(ctx, "SELECT", 0).Err(); err != nil {
+// 				continue
+// 			}
+// 			db.Rw.RLock()
+// 			for key, value := range db.One {
+// 				keyJSON, err := json.Marshal(key)
+// 				if err != nil {
+// 					continue
+// 				}
+// 				valueJSON, err := json.Marshal(value)
+// 				if err != nil {
+// 					continue
+// 				}
+// 				redisKey := string(keyJSON)
+// 				_ = db.Rdb.Set(ctx, redisKey, valueJSON, 0).Err()
+// 			}
+// 			db.Rw.RUnlock()
+// 		}
+// 	}
+// }
+
+// // Past loads all keys from Redis into the Circuit's One map.
+// func (db *Database) Past() error {
+// 	if err := db.Rdb.Do(db.Ctx, "SELECT", 0).Err(); err != nil {
+// 		return err
+// 	}
+// 	db.Mu.Lock()
+// 	defer db.Mu.Unlock()
+// 	iter := db.Rdb.Scan(db.Ctx, 0, "*", 0).Iterator()
+// 	for iter.Next(db.Ctx) {
+// 		redisKey := iter.Val()
+// 		var key Zero
+// 		if err := json.Unmarshal([]byte(redisKey), &key); err != nil {
+// 			continue
+// 		}
+// 		valueJSON, err := db.Rdb.Get(db.Ctx, redisKey).Bytes()
+// 		if err != nil {
+// 			return err
+// 		}
+// 		var value any
+// 		if err := json.Unmarshal(valueJSON, &value); err != nil {
+// 			return err
+// 		}
+// 		db.One[key] = value
+// 	}
+// 	if err := iter.Err(); err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }

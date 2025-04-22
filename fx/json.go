@@ -75,77 +75,47 @@ func (j *JSON) In(url, apiKey string) ([]byte, error) {
 	return body, nil
 }
 
-// Simple executes an HTTP GET request, cleans the JSON response, and returns the cleaned-up response as bytes.
-func (j *JSON) Simple(url, apiKey string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(j.CTX, "GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request for URL %s: %w", url, err)
-	}
-	if apiKey != "" {
-		req.Header.Set("X-API-KEY", apiKey)
-	}
-	resp, err := j.HTTP.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer resp.Body.Close()
+// Simplify processes a slice of objects ([]any), flattens each object, and removes empty fields.
+func (j *JSON) Simplify(input []any, prefix string) []any {
+	var result []any
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code %d", resp.StatusCode)
-	}
-	if resp.Body == nil || resp.ContentLength == 0 {
-		return nil, fmt.Errorf("empty response body")
-	}
+	for _, item := range input {
+		obj, ok := item.(map[string]any)
+		if !ok {
+			continue // Skip non-map items
+		}
 
-	// Decode the response body into a map
-	var raw map[string]any
-	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
-		return nil, fmt.Errorf("failed to decode JSON: %w", err)
-	}
-
-	// Simplify the JSON response
-	cleaned := j.Simplify(raw, "")
-
-	// Marshal the cleaned-up response back into bytes
-	cleanedBytes, err := json.Marshal(cleaned)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal cleaned JSON: %w", err)
-	}
-
-	return cleanedBytes, nil
-}
-
-// FlattenAndClean flattens a nested map and removes empty strings, empty slices, and empty maps.
-func (j *JSON) Simplify(input map[string]any, prefix string) map[string]any {
-	flatMap := make(map[string]any)
-	var flatten func(map[string]any, string)
-	flatten = func(m map[string]any, pfx string) {
-		for key, value := range m {
-			newKey := key
-			if pfx != "" {
-				newKey = pfx + "." + key
-			}
-			switch v := value.(type) {
-			case map[string]any:
-				flatten(v, newKey)
-			case []any:
-				for i, item := range v {
-					arrayKey := fmt.Sprintf("%s[%d]", newKey, i)
-					if nestedMap, ok := item.(map[string]any); ok {
-						flatten(nestedMap, arrayKey)
-					} else if !isEmpty(item) {
-						flatMap[arrayKey] = item
-					}
+		flatMap := make(map[string]any)
+		var flatten func(map[string]any, string)
+		flatten = func(m map[string]any, pfx string) {
+			for key, value := range m {
+				newKey := key
+				if pfx != "" {
+					newKey = pfx + "." + key
 				}
-			default:
-				if !isEmpty(v) {
-					flatMap[newKey] = v
+				switch v := value.(type) {
+				case map[string]any:
+					flatten(v, newKey) // Recursively flatten nested maps
+				case []any:
+					for i, item := range v {
+						arrayKey := fmt.Sprintf("%s[%d]", newKey, i)
+						if nestedMap, ok := item.(map[string]any); ok {
+							flatten(nestedMap, arrayKey) // Flatten nested maps in arrays
+						} else if !isEmpty(item) {
+							flatMap[arrayKey] = item // Add non-empty array items
+						}
+					}
+				default:
+					if !isEmpty(v) {
+						flatMap[newKey] = v // Add non-empty values
+					}
 				}
 			}
 		}
+		flatten(obj, prefix)
+		result = append(result, flatMap)
 	}
-	flatten(input, prefix)
-	return flatMap
+	return result
 }
 
 // isEmpty checks if a value is an empty string, empty slice, or empty map.

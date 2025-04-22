@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -26,7 +25,7 @@ type Factory struct {
 	When    *sync.Cond
 }
 
-func Assemble(dbName string, distance time.Duration) *Factory {
+func Assemble(dbName string, rdb int) *Factory {
 	ctx := context.Background()
 	http := &http.Client{}
 	json := fx.Json(*http, ctx)
@@ -39,7 +38,7 @@ func Assemble(dbName string, distance time.Duration) *Factory {
 	rw := &sync.RWMutex{}
 	when := sync.NewCond(mu)
 
-	db, err := fx.Connect(dbName, ctx, mu, rw)
+	db, err := fx.Connect(dbName, rdb, ctx, mu, rw)
 	if err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
 	}

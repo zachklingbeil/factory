@@ -19,7 +19,7 @@ type Database struct {
 	Ctx context.Context
 }
 
-func Connect(dbName string, ctx context.Context, mu *sync.Mutex, rw *sync.RWMutex) (*Database, error) {
+func Connect(dbName string, dbNum int, ctx context.Context, mu *sync.Mutex, rw *sync.RWMutex) (*Database, error) {
 	db := &Database{
 		Mu:  mu,
 		Rw:  rw,
@@ -32,7 +32,7 @@ func Connect(dbName string, ctx context.Context, mu *sync.Mutex, rw *sync.RWMute
 	}
 
 	// Connect to Redis
-	client, err := db.ConnectRedis(0)
+	client, err := db.ConnectRedis(dbNum)
 	if err != nil {
 		return nil, err
 	}

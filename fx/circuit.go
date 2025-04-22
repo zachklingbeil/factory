@@ -49,7 +49,7 @@ func (c *Circuit) Read(zero Zero) any {
 	return value
 }
 
-func (c *Circuit) Coordinates(blockNumber, timestamp int64, ones []any) (Zero, any, error) {
+func (c *Circuit) Coordinates(blockNumber, timestamp int64, ones []any) (Zero, []any, error) {
 	for i := range ones {
 		if tx, ok := ones[i].(map[string]any); ok {
 			tx["index"] = i + 1

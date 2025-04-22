@@ -13,7 +13,7 @@ type Circuit struct {
 }
 
 type Zero struct {
-	Block       uint64 `json:"block"`
+	Block       int64  `json:"block"`
 	Year        uint8  `json:"year"`
 	Month       uint8  `json:"month"`
 	Day         uint8  `json:"day"`

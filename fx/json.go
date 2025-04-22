@@ -75,8 +75,8 @@ func (j *JSON) In(url, apiKey string) ([]byte, error) {
 	return body, nil
 }
 
-// In executes an HTTP GET request, decodes the JSON response, flattens and cleans it, and returns map[string]any.
-func (j *JSON) Simple(url, apiKey string) (map[string]any, error) {
+// Simple executes an HTTP GET request, cleans the JSON response, and returns the cleaned-up response as bytes.
+func (j *JSON) Simple(url, apiKey string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(j.CTX, "GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request for URL %s: %w", url, err)
@@ -89,18 +89,30 @@ func (j *JSON) Simple(url, apiKey string) (map[string]any, error) {
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected status code %d", resp.StatusCode)
 	}
 	if resp.Body == nil || resp.ContentLength == 0 {
 		return nil, fmt.Errorf("empty response body")
 	}
+
+	// Decode the response body into a map
 	var raw map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
 		return nil, fmt.Errorf("failed to decode JSON: %w", err)
 	}
-	result := j.Simplify(raw, "")
-	return result, nil
+
+	// Simplify the JSON response
+	cleaned := j.Simplify(raw, "")
+
+	// Marshal the cleaned-up response back into bytes
+	cleanedBytes, err := json.Marshal(cleaned)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal cleaned JSON: %w", err)
+	}
+
+	return cleanedBytes, nil
 }
 
 // FlattenAndClean flattens a nested map and removes empty strings, empty slices, and empty maps.

@@ -39,7 +39,7 @@ func Assemble(dbName string, distance time.Duration) *Factory {
 	rw := &sync.RWMutex{}
 	when := sync.NewCond(mu)
 
-	db, err := fx.Connect(dbName, 0, ctx, mu, rw)
+	db, err := fx.Connect(dbName, ctx, mu, rw)
 	if err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
 	}

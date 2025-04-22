@@ -19,7 +19,7 @@ type Database struct {
 	Ctx context.Context
 }
 
-func Connect(dbName string, redisDB int, ctx context.Context, mu *sync.Mutex, rw *sync.RWMutex) (*Database, error) {
+func Connect(dbName string, ctx context.Context, mu *sync.Mutex, rw *sync.RWMutex) (*Database, error) {
 	db := &Database{
 		Mu:  mu,
 		Rw:  rw,
@@ -32,12 +32,15 @@ func Connect(dbName string, redisDB int, ctx context.Context, mu *sync.Mutex, rw
 	}
 
 	// Connect to Redis
-	if err := db.ConnectRedis(redisDB); err != nil {
+	client, err := db.ConnectRedis(0)
+	if err != nil {
 		return nil, err
 	}
+	db.Rdb = client // Assign the Redis client to the Database struct
 
 	return db, nil
 }
+
 func (db *Database) ConnectPostgres(dbName string) error {
 	connStr := fmt.Sprintf("user=postgres password=postgres dbname=%s host=postgres port=5432 sslmode=disable", dbName)
 	pg, err := sql.Open("postgres", connStr)
@@ -57,7 +60,7 @@ func (db *Database) ConnectPostgres(dbName string) error {
 	return fmt.Errorf("failed to connect to database '%s' after %d retries", dbName, maxRetries)
 }
 
-func (db *Database) ConnectRedis(dbNumber int) error {
+func (db *Database) ConnectRedis(dbNumber int) (*redis.Client, error) {
 	pw := os.Getenv("PASSWORD")
 	client := redis.NewClient(&redis.Options{
 		Addr:     "redis:6379",
@@ -65,8 +68,7 @@ func (db *Database) ConnectRedis(dbNumber int) error {
 		DB:       dbNumber,
 	})
 	if _, err := client.Ping(db.Ctx).Result(); err != nil {
-		return fmt.Errorf("failed to connect to Redis: %w", err)
+		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
 	}
-	db.Rdb = client
-	return nil
+	return client, nil
 }

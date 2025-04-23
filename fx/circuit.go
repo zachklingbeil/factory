@@ -24,6 +24,7 @@ type Zero struct {
 	Second      uint8  `json:"second"`
 	Millisecond uint16 `json:"millisecond"`
 	Index       uint16 `json:"index"`
+	Count       uint16 `json:"count"`
 }
 
 func NewCircuit(ctx context.Context, mu *sync.Mutex) *Circuit {
@@ -55,7 +56,7 @@ func (c *Circuit) Coordinates(blockNumber, timestamp int64, ones []any) (Zero, [
 			tx["index"] = i + 1
 		}
 	}
-
+	count := len(ones)
 	t := time.UnixMilli(timestamp)
 	coord := Zero{
 		Block:       blockNumber,
@@ -67,6 +68,7 @@ func (c *Circuit) Coordinates(blockNumber, timestamp int64, ones []any) (Zero, [
 		Second:      uint8(t.Second()),
 		Millisecond: uint16(t.Nanosecond() / 1e6),
 		Index:       0,
+		Count:       uint16(count),
 	}
 	return coord, ones, nil
 }

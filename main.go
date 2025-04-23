@@ -15,18 +15,18 @@ import (
 )
 
 type Factory struct {
-	Ctx   context.Context
-	Eth   *ethclient.Client
-	Http  *http.Client
-	Rpc   *rpc.Client
-	Redis *redis.Client
-	Pg    *sql.DB
-	Json  *fx.JSON
-	// Circuit *fx.Circuit
-	Math *fx.Math
-	Mu   *sync.Mutex
-	Rw   *sync.RWMutex
-	When *sync.Cond
+	Ctx     context.Context
+	Eth     *ethclient.Client
+	Http    *http.Client
+	Rpc     *rpc.Client
+	Redis   *redis.Client
+	Pg      *sql.DB
+	Json    *fx.JSON
+	Circuit *fx.Circuit
+	Math    *fx.Math
+	Mu      *sync.Mutex
+	Rw      *sync.RWMutex
+	When    *sync.Cond
 }
 
 func Assemble(dbName string, dbNum int) *Factory {
@@ -51,20 +51,20 @@ func Assemble(dbName string, dbNum int) *Factory {
 	if err != nil {
 		log.Fatalf("Error connecting to Redis: %v", err)
 	}
-	// circuit := fx.NewCircuit(ctx, mu)
+	circuit := fx.NewCircuit(ctx, mu)
 	factory := &Factory{
-		Ctx:   ctx,
-		Pg:    pg,
-		Redis: redis,
-		Json:  json,
-		// Circuit: circuit,
-		Eth:  eth,
-		Http: http,
-		Math: &fx.Math{},
-		Rpc:  rpc,
-		Mu:   mu,
-		Rw:   rw,
-		When: when,
+		Ctx:     ctx,
+		Pg:      pg,
+		Redis:   redis,
+		Json:    json,
+		Circuit: circuit,
+		Eth:     eth,
+		Http:    http,
+		Math:    &fx.Math{},
+		Rpc:     rpc,
+		Mu:      mu,
+		Rw:      rw,
+		When:    when,
 	}
 	return factory
 }

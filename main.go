@@ -13,16 +13,15 @@ import (
 )
 
 type Factory struct {
-	Ctx     context.Context
-	Db      *fx.Database
-	Json    *fx.JSON
-	Circuit *fx.Circuit
-	Eth     *ethclient.Client
-	Http    *http.Client
-	Rpc     *rpc.Client
-	Mu      *sync.Mutex
-	Rw      *sync.RWMutex
-	When    *sync.Cond
+	Ctx  context.Context
+	Db   *fx.Database
+	Json *fx.JSON
+	Eth  *ethclient.Client
+	Http *http.Client
+	Rpc  *rpc.Client
+	Mu   *sync.Mutex
+	Rw   *sync.RWMutex
+	When *sync.Cond
 }
 
 func Assemble(dbName string, rdb int) *Factory {
@@ -42,19 +41,17 @@ func Assemble(dbName string, rdb int) *Factory {
 	if err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
 	}
-	circuit := fx.NewCircuit(ctx, mu)
 
 	factory := &Factory{
-		Ctx:     ctx,
-		Db:      db,
-		Json:    json,
-		Circuit: circuit,
-		Eth:     eth,
-		Http:    http,
-		Rpc:     rpc,
-		Mu:      mu,
-		Rw:      rw,
-		When:    when,
+		Ctx:  ctx,
+		Db:   db,
+		Json: json,
+		Eth:  eth,
+		Http: http,
+		Rpc:  rpc,
+		Mu:   mu,
+		Rw:   rw,
+		When: when,
 	}
 	return factory
 }

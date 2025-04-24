@@ -20,6 +20,7 @@ type Factory struct {
 	Http  *http.Client
 	Rpc   *rpc.Client
 	Redis *redis.Client
+	Db    *fx.Database
 	Pg    *sql.DB
 	Json  *fx.JSON
 	Math  *fx.Math
@@ -40,13 +41,18 @@ func Assemble(dbName string, dbNum int) *Factory {
 	mu := &sync.Mutex{}
 	rw := &sync.RWMutex{}
 	when := sync.NewCond(mu)
+	db := &fx.Database{
+		Mu:  mu,
+		Rw:  rw,
+		Ctx: ctx,
+	}
 
-	pg, err := fx.ConnectPostgres(dbName)
+	pg, err := db.ConnectPostgres(dbName)
 	if err != nil {
 		log.Fatalf("Error connecting to Postgres: %v", err)
 	}
 
-	redis, err := fx.ConnectRedis(dbNum, ctx)
+	redis, err := db.ConnectRedis(dbNum, ctx)
 	if err != nil {
 		log.Fatalf("Error connecting to Redis: %v", err)
 	}

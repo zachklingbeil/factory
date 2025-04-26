@@ -22,6 +22,7 @@ type Factory struct {
 	Redis *redis.Client
 	Db    *fx.Database
 	Pg    *sql.DB
+	State *fx.State
 	Json  *fx.JSON
 	Math  *fx.Math
 	Mu    *sync.Mutex
@@ -38,9 +39,11 @@ func Assemble(dbName string, dbNum int) *Factory {
 	if err != nil {
 		log.Fatalf("Error creating Ethereum node: %v", err)
 	}
+
 	mu := &sync.Mutex{}
 	rw := &sync.RWMutex{}
 	when := sync.NewCond(mu)
+
 	db := &fx.Database{
 		Mu:  mu,
 		Rw:  rw,
@@ -56,10 +59,12 @@ func Assemble(dbName string, dbNum int) *Factory {
 	if err != nil {
 		log.Fatalf("Error connecting to Redis: %v", err)
 	}
+	state := fx.NewState(json, mu, rw, redis, ctx)
 	factory := &Factory{
 		Ctx:   ctx,
 		Pg:    pg,
 		Redis: redis,
+		State: state,
 		Json:  json,
 		Eth:   eth,
 		Http:  http,

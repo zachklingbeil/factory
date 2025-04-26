@@ -48,7 +48,6 @@ func (s *State) Add(key string, value any) error {
 	t := time.Now().Format("15:04:05.000")
 	state, _ := json.Marshal(s.Map)
 	s.Redis.SAdd(s.Ctx, "state", t, state, 0)
-	s.Get()
 	return nil
 }
 
@@ -58,6 +57,6 @@ func (s *State) Get() {
 	s.Json.Print(s.Map)
 }
 
-func (s *State) Continue() {
+// func (s *State) Continue() {
 
-}
+// }

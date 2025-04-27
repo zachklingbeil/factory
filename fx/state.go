@@ -3,6 +3,7 @@ package fx
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -26,7 +27,7 @@ func NewState(json *JSON, mu *sync.Mutex, rw *sync.RWMutex, data *Data, ctx cont
 		Ctx:  ctx,
 	}
 
-	state.Add("t0", time.Now().Format("15:04:05.000"))
+	state.Add("t0", time.Now().Format("08:04:05.0000000"))
 	return state
 }
 
@@ -35,9 +36,16 @@ func (s *State) Add(key string, value any) error {
 	defer s.Mu.Unlock()
 	s.Map[key] = value
 
-	t := time.Now().Format("15:04:05.000")
-	state, _ := json.Marshal(s.Map)
-	s.Data.RB.SAdd(s.Ctx, "state", t, state, 0)
+	state, err := json.Marshal(s.Map)
+	if err != nil {
+		return fmt.Errorf("failed to marshal state map: %w", err)
+	}
+
+	timestamp := time.Now().Format("08:04:05.0000000")
+	if err := s.Data.RB.SAdd(s.Ctx, "state", state, timestamp).Err(); err != nil {
+		return fmt.Errorf("failed to add state to Redis: %w", err)
+	}
+
 	return nil
 }
 

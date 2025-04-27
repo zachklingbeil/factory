@@ -60,16 +60,6 @@ func (d *Data) ConnectPostgres(dbName string) error {
 	return fmt.Errorf("failed to connect to Data '%s' after %d retries", dbName, maxRetries)
 }
 
-func (d *Data) Source(key string, target any) []any {
-	var result []any
-	err := SourceSlice(key, &result, d.RB, d.Ctx)
-	if err != nil {
-		log.Printf("Failed to fetch data from Redis key '%s': %v", key, err)
-		return nil
-	}
-	return result
-}
-
 func (d *Data) Save(key string, source []any) error {
 	err := StoreSlice(key, source, d.RB, d.Ctx)
 	if err != nil {
@@ -78,22 +68,29 @@ func (d *Data) Save(key string, source []any) error {
 	return nil
 }
 
-func SourceSlice[T any](key string, target *[]T, redis *redis.Client, ctx context.Context) error {
-	source, err := redis.SMembers(ctx, key).Result()
+func (d *Data) Source(key string) []any {
+	var result []any
+	items := SourceSlice[any](d.Ctx, d.RB, key)
+	result = append(result, items...)
+	return result
+}
+
+func SourceSlice[T any](ctx context.Context, rb *redis.Client, key string) []T {
+	var items []T
+	source, err := rb.SMembers(ctx, key).Result()
 	if err != nil {
-		return fmt.Errorf("failed to fetch data from Redis key '%s': %w", key, err)
+		log.Fatalf("Failed to fetch items from Redis set '%s': %v", key, err)
 	}
 
-	*target = make([]T, 0, len(source))
-	for _, item := range source {
-		var value T
-		if err := json.Unmarshal([]byte(item), &value); err != nil {
-			log.Printf("Skipping invalid item for key '%s': %v (data: %s)", key, err, item)
+	for _, s := range source {
+		var item T
+		if err := json.Unmarshal([]byte(s), &item); err != nil {
+			log.Printf("Skipping invalid item: %v (data: %s)", err, s)
 			continue
 		}
-		*target = append(*target, value)
+		items = append(items, item)
 	}
-	return nil
+	return items
 }
 
 // StoreRedisSlice stores a slice of items into Redis as a set.

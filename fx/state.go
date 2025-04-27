@@ -5,29 +5,25 @@ import (
 	"encoding/json"
 	"sync"
 	"time"
-
-	"maps"
 )
 
 type State struct {
-	Map        map[string]any
-	Json       *JSON
-	Mu         *sync.Mutex
-	Rw         *sync.RWMutex
-	Data       *Data
-	Ctx        context.Context
-	MapHistory []map[string]any // Slice to store iterations of the map
+	Map  map[string]any
+	Json *JSON
+	Mu   *sync.Mutex
+	Rw   *sync.RWMutex
+	Data *Data
+	Ctx  context.Context
 }
 
 func NewState(json *JSON, mu *sync.Mutex, rw *sync.RWMutex, data *Data, ctx context.Context) *State {
 	state := &State{
-		Map:        make(map[string]any),
-		Json:       json,
-		Mu:         mu,
-		Rw:         rw,
-		Data:       data,
-		Ctx:        ctx,
-		MapHistory: []map[string]any{}, // Initialize the slice
+		Map:  make(map[string]any),
+		Json: json,
+		Mu:   mu,
+		Rw:   rw,
+		Data: data,
+		Ctx:  ctx,
 	}
 
 	state.Add("t0", time.Now().Format("15:04:05.000"))
@@ -39,12 +35,8 @@ func (s *State) Add(key string, value any) error {
 	defer s.Mu.Unlock()
 	s.Map[key] = value
 
-	mapCopy := make(map[string]any)
-	maps.Copy(mapCopy, s.Map)
-	s.MapHistory = append(s.MapHistory, mapCopy)
-
 	t := time.Now().Format("15:04:05.000")
-	state, _ := json.Marshal(s.MapHistory)
+	state, _ := json.Marshal(s.Map)
 	s.Data.RB.SAdd(s.Ctx, "state", t, state, 0)
 	return nil
 }

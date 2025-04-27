@@ -44,7 +44,7 @@ func (s *State) Add(key string, value any) error {
 	s.MapHistory = append(s.MapHistory, mapCopy)
 
 	t := time.Now().Format("15:04:05.000")
-	state, _ := json.Marshal(s.Map)
+	state, _ := json.Marshal(s.MapHistory)
 	s.Data.RB.SAdd(s.Ctx, "state", t, state, 0)
 	return nil
 }
@@ -54,7 +54,3 @@ func (s *State) Get() {
 	defer s.Rw.RUnlock()
 	s.Json.Print(s.Map)
 }
-
-// func (s *State) Continue() {
-
-// }

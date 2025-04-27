@@ -3,9 +3,7 @@ package fx
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -58,53 +56,4 @@ func (d *Data) ConnectPostgres(dbName string) error {
 	}
 	d.Pg = pg
 	return fmt.Errorf("failed to connect to Data '%s' after %d retries", dbName, maxRetries)
-}
-
-func (d *Data) Save(key string, source []any) error {
-	err := StoreSlice(key, source, d.RB, d.Ctx)
-	if err != nil {
-		return fmt.Errorf("failed to store slice using Redis source: %w", err)
-	}
-	return nil
-}
-
-func (d *Data) Source(key string) []any {
-	var result []any
-	items := SourceSlice[any](d.Ctx, d.RB, key)
-	result = append(result, items...)
-	return result
-}
-
-func SourceSlice[T any](ctx context.Context, rb *redis.Client, key string) []T {
-	var items []T
-	source, err := rb.SMembers(ctx, key).Result()
-	if err != nil {
-		log.Fatalf("Failed to fetch items from Redis set '%s': %v", key, err)
-	}
-
-	for _, s := range source {
-		var item T
-		if err := json.Unmarshal([]byte(s), &item); err != nil {
-			log.Printf("Skipping invalid item: %v (data: %s)", err, s)
-			continue
-		}
-		items = append(items, item)
-	}
-	return items
-}
-
-// StoreRedisSlice stores a slice of items into Redis as a set.
-func StoreSlice[T any](key string, source []T, redis *redis.Client, ctx context.Context) error {
-	pipe := redis.Pipeline()
-	for _, item := range source {
-		data, err := json.Marshal(item)
-		if err != nil {
-			return fmt.Errorf("failed to marshal item for key '%s': %w", key, err)
-		}
-		pipe.SAdd(ctx, key, data)
-	}
-	if _, err := pipe.Exec(ctx); err != nil {
-		return fmt.Errorf("failed to store slice in Redis for key '%s': %w", key, err)
-	}
-	return nil
 }

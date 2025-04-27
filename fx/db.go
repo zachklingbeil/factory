@@ -60,13 +60,14 @@ func (d *Data) ConnectPostgres(dbName string) error {
 	return fmt.Errorf("failed to connect to Data '%s' after %d retries", dbName, maxRetries)
 }
 
-func (d *Data) Source(key string, target any) ([]any, error) {
+func (d *Data) Source(key string, target any) []any {
 	var result []any
 	err := SourceSlice(key, &result, d.RB, d.Ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load slice using Redis source: %w", err)
+		log.Printf("Failed to fetch data from Redis key '%s': %v", key, err)
+		return nil
 	}
-	return result, nil
+	return result
 }
 
 func (d *Data) Save(key string, source []any) error {

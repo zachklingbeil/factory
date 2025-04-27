@@ -2,7 +2,6 @@ package factory
 
 import (
 	"context"
-	"database/sql"
 	"log"
 	"net/http"
 	"sync"
@@ -10,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	_ "github.com/lib/pq"
-	"github.com/redis/go-redis/v9"
 	"github.com/zachklingbeil/factory/fx"
 )
 
@@ -19,9 +17,7 @@ type Factory struct {
 	Eth   *ethclient.Client
 	Http  *http.Client
 	Rpc   *rpc.Client
-	Redis *redis.Client
-	Db    *fx.Database
-	Pg    *sql.DB
+	Data  *fx.Data
 	State *fx.State
 	Json  *fx.JSON
 	Math  *fx.Math
@@ -30,7 +26,7 @@ type Factory struct {
 	When  *sync.Cond
 }
 
-func Assemble(dbName string, dbNum int) *Factory {
+func Assemble() *Factory {
 	ctx := context.Background()
 	http := &http.Client{}
 	json := fx.Json(*http, ctx)
@@ -44,26 +40,12 @@ func Assemble(dbName string, dbNum int) *Factory {
 	rw := &sync.RWMutex{}
 	when := sync.NewCond(mu)
 
-	db := &fx.Database{
-		Mu:  mu,
-		Rw:  rw,
-		Ctx: ctx,
-	}
+	data, _ := fx.Source("timefactory", ctx)
+	state := fx.NewState(json, mu, rw, data, ctx)
 
-	pg, err := db.ConnectPostgres(dbName)
-	if err != nil {
-		log.Fatalf("Error connecting to Postgres: %v", err)
-	}
-
-	redis, err := db.ConnectRedis(dbNum, ctx)
-	if err != nil {
-		log.Fatalf("Error connecting to Redis: %v", err)
-	}
-	state := fx.NewState(json, mu, rw, redis, ctx)
 	factory := &Factory{
 		Ctx:   ctx,
-		Pg:    pg,
-		Redis: redis,
+		Data:  data,
 		State: state,
 		Json:  json,
 		Eth:   eth,

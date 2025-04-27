@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"maps"
-
-	"github.com/redis/go-redis/v9"
 )
 
 type State struct {
@@ -16,18 +14,18 @@ type State struct {
 	Json       *JSON
 	Mu         *sync.Mutex
 	Rw         *sync.RWMutex
-	Redis      *redis.Client
+	Data       *Data
 	Ctx        context.Context
 	MapHistory []map[string]any // Slice to store iterations of the map
 }
 
-func NewState(json *JSON, mu *sync.Mutex, rw *sync.RWMutex, redis *redis.Client, ctx context.Context) *State {
+func NewState(json *JSON, mu *sync.Mutex, rw *sync.RWMutex, data *Data, ctx context.Context) *State {
 	state := &State{
 		Map:        make(map[string]any),
 		Json:       json,
 		Mu:         mu,
 		Rw:         rw,
-		Redis:      redis,
+		Data:       data,
 		Ctx:        ctx,
 		MapHistory: []map[string]any{}, // Initialize the slice
 	}
@@ -47,7 +45,7 @@ func (s *State) Add(key string, value any) error {
 
 	t := time.Now().Format("15:04:05.000")
 	state, _ := json.Marshal(s.Map)
-	s.Redis.SAdd(s.Ctx, "state", t, state, 0)
+	s.Data.RB.SAdd(s.Ctx, "state", t, state, 0)
 	return nil
 }
 

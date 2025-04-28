@@ -7,44 +7,28 @@ import (
 	"sync"
 	"time"
 
-	"maps"
-
 	"github.com/redis/go-redis/v9"
 )
 
 type State struct {
-	Mu        *sync.Mutex
-	Data      *Data
-	Ctx       context.Context
-	Current   map[string]any
-	ChangeLog []map[string]any
+	Mu      *sync.Mutex
+	Data    *Data
+	Ctx     context.Context
+	Current map[string]any
 }
 
 func NewState(data *Data, ctx context.Context) *State {
-	state := &State{
-		Mu:        &sync.Mutex{},
-		Data:      data,
-		Ctx:       ctx,
-		Current:   make(map[string]any),
-		ChangeLog: []map[string]any{},
+	return &State{
+		Mu:      &sync.Mutex{},
+		Data:    data,
+		Ctx:     ctx,
+		Current: make(map[string]any),
 	}
-	return state
 }
 
 func (s *State) Add(key string, value any) error {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
-
-	if existingValue, exists := s.Current[key]; exists && existingValue == value {
-		return nil
-	}
-
-	if len(s.Current) > 0 {
-		change := make(map[string]any)
-		maps.Copy(change, s.Current)
-		s.ChangeLog = append([]map[string]any{change}, s.ChangeLog...)
-	}
-
 	s.Current[key] = value
 
 	state, err := json.Marshal(s.Current)
@@ -53,7 +37,6 @@ func (s *State) Add(key string, value any) error {
 	}
 
 	score := float64(time.Now().UnixNano())
-
 	if err := s.Data.RB.ZAdd(s.Ctx, "state", redis.Z{
 		Score:  score,
 		Member: state,
@@ -63,19 +46,28 @@ func (s *State) Add(key string, value any) error {
 	return nil
 }
 
-func (s *State) LoadLatestState() error {
+func (s *State) LoadState() error {
 	result, err := s.Data.RB.ZRevRangeWithScores(s.Ctx, "state", 0, 0).Result()
 	if err != nil {
 		return fmt.Errorf("failed to retrieve latest state from Redis: %w", err)
 	}
-
 	if len(result) == 0 {
 		return fmt.Errorf("no state found in Redis")
 	}
-
 	latestState := result[0].Member.(string)
 	if err := json.Unmarshal([]byte(latestState), &s.Current); err != nil {
 		return fmt.Errorf("failed to unmarshal latest state: %w", err)
 	}
 	return nil
+}
+
+func (s *State) Get(key string) any {
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+
+	value, exists := s.Current[key]
+	if !exists {
+		return fmt.Errorf("key %s not found in state", key)
+	}
+	return value
 }

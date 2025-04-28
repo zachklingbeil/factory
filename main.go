@@ -41,7 +41,7 @@ func Assemble() *Factory {
 	when := sync.NewCond(mu)
 
 	data, _ := fx.Source("timefactory", ctx)
-	state := fx.NewState(json, mu, rw, data, ctx)
+	state := fx.NewState(data, ctx)
 
 	factory := &Factory{
 		Ctx:   ctx,

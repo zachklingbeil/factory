@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -43,9 +42,14 @@ func (s *State) AddToPackage(pkg string, key string, value any) error {
 		return fmt.Errorf("failed to marshal state: %w", err)
 	}
 
-	score := float64(time.Now().UnixNano())
+	// Use an incrementing counter for the score
+	nextScore, err := s.Data.RB.Incr(s.Ctx, "state").Result()
+	if err != nil {
+		return fmt.Errorf("failed to increment state counter: %w", err)
+	}
+
 	if err := s.Data.RB.ZAdd(s.Ctx, "state", redis.Z{
-		Score:  score,
+		Score:  float64(nextScore),
 		Member: state,
 	}).Err(); err != nil {
 		return fmt.Errorf("failed to add state to sorted set: %w", err)

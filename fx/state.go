@@ -11,27 +11,34 @@ import (
 )
 
 type State struct {
-	Mu      *sync.Mutex
-	Data    *Data
-	Ctx     context.Context
-	Current map[string]any
+	Mu   *sync.Mutex
+	Data *Data
+	Ctx  context.Context
+	Map  map[string]map[string]any
 }
 
 func NewState(data *Data, ctx context.Context) *State {
-	return &State{
-		Mu:      &sync.Mutex{},
-		Data:    data,
-		Ctx:     ctx,
-		Current: make(map[string]any),
+	state := &State{
+		Mu:   &sync.Mutex{},
+		Data: data,
+		Ctx:  ctx,
+		Map:  make(map[string]map[string]any),
 	}
+	state.LoadState()
+	return state
 }
 
-func (s *State) Add(key string, value any) error {
+func (s *State) AddToPackage(pkg string, key string, value any) error {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
-	s.Current[key] = value
 
-	state, err := json.Marshal(s.Current)
+	if _, exists := s.Map[pkg]; !exists {
+		s.Map[pkg] = make(map[string]any)
+	}
+
+	s.Map[pkg][key] = value
+
+	state, err := json.Marshal(s.Map)
 	if err != nil {
 		return fmt.Errorf("failed to marshal state: %w", err)
 	}
@@ -55,19 +62,34 @@ func (s *State) LoadState() error {
 		return fmt.Errorf("no state found in Redis")
 	}
 	latestState := result[0].Member.(string)
-	if err := json.Unmarshal([]byte(latestState), &s.Current); err != nil {
+	if err := json.Unmarshal([]byte(latestState), &s.Map); err != nil {
 		return fmt.Errorf("failed to unmarshal latest state: %w", err)
 	}
 	return nil
 }
 
-func (s *State) Get(key string) any {
+func (s *State) GetFromPackage(pkg string, key string) (any, error) {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
 
-	value, exists := s.Current[key]
+	packageMap, exists := s.Map[pkg]
 	if !exists {
-		return fmt.Errorf("key %s not found in state", key)
+		return nil, fmt.Errorf("package %s not found in state", pkg)
 	}
-	return value
+	value, exists := packageMap[key]
+	if !exists {
+		return nil, fmt.Errorf("key %s not found in package %s", key, pkg)
+	}
+	return value, nil
+}
+
+func (s *State) GetPackage(pkg string) (map[string]any, error) {
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+
+	packageMap, exists := s.Map[pkg]
+	if !exists {
+		return nil, fmt.Errorf("package %s not found in state", pkg)
+	}
+	return packageMap, nil
 }

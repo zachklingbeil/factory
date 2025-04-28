@@ -42,7 +42,6 @@ func Assemble() *Factory {
 
 	data, _ := fx.Source("timefactory", ctx)
 	state := fx.NewState(data, ctx)
-	state.LoadState()
 	factory := &Factory{
 		Ctx:   ctx,
 		Data:  data,

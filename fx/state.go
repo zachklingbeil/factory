@@ -27,7 +27,7 @@ func NewState(data *Data, ctx context.Context) *State {
 	return state
 }
 
-func (s *State) AddToPackage(pkg string, key string, value any) error {
+func (s *State) Add(pkg string, key string, value any) error {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
 
@@ -42,14 +42,18 @@ func (s *State) AddToPackage(pkg string, key string, value any) error {
 		return fmt.Errorf("failed to marshal state: %w", err)
 	}
 
-	// Use an incrementing counter for the score
-	nextScore, err := s.Data.RB.Incr(s.Ctx, "state").Result()
+	result, err := s.Data.RB.ZRevRangeWithScores(s.Ctx, "state", 0, 0).Result()
 	if err != nil {
-		return fmt.Errorf("failed to increment state counter: %w", err)
+		return fmt.Errorf("failed to retrieve highest score from sorted set: %w", err)
+	}
+
+	var nextScore float64 = 1
+	if len(result) > 0 {
+		nextScore = result[0].Score + 1
 	}
 
 	if err := s.Data.RB.ZAdd(s.Ctx, "state", redis.Z{
-		Score:  float64(nextScore),
+		Score:  nextScore,
 		Member: state,
 	}).Err(); err != nil {
 		return fmt.Errorf("failed to add state to sorted set: %w", err)
@@ -72,7 +76,7 @@ func (s *State) LoadState() error {
 	return nil
 }
 
-func (s *State) GetFromPackage(pkg string, key string) (any, error) {
+func (s *State) GetValue(pkg string, key string) (any, error) {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
 
@@ -87,7 +91,7 @@ func (s *State) GetFromPackage(pkg string, key string) (any, error) {
 	return value, nil
 }
 
-func (s *State) GetPackage(pkg string) (map[string]any, error) {
+func (s *State) GetMap(pkg string) (map[string]any, error) {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
 

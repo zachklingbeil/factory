@@ -58,9 +58,13 @@ func (s *State) Add(pkg string, key string, value any) error {
 	}).Err(); err != nil {
 		return fmt.Errorf("failed to add state to sorted set: %w", err)
 	}
+
+	if err := s.Data.RB.ZRemRangeByRank(s.Ctx, "state", 0, -3).Err(); err != nil {
+		return fmt.Errorf("failed to trim old states from sorted set: %w", err)
+	}
+
 	return nil
 }
-
 func (s *State) LoadState() error {
 	result, err := s.Data.RB.ZRevRangeWithScores(s.Ctx, "state", 0, 0).Result()
 	if err != nil {

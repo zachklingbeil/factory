@@ -42,6 +42,7 @@ func Assemble() *Factory {
 
 	data, _ := fx.Source("timefactory", ctx)
 	state := fx.NewState(data, ctx)
+	math := fx.NewMath(when)
 	factory := &Factory{
 		Ctx:   ctx,
 		Data:  data,
@@ -49,7 +50,7 @@ func Assemble() *Factory {
 		Json:  json,
 		Eth:   eth,
 		Http:  http,
-		Math:  &fx.Math{},
+		Math:  math,
 		Rpc:   rpc,
 		Mu:    mu,
 		Rw:    rw,

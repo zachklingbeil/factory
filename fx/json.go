@@ -75,12 +75,12 @@ func (j *JSON) In(url, apiKey string) ([]byte, error) {
 	return body, nil
 }
 
-func (j *JSON) RateLimitedIn(url, apiKey string, initialLimit int) ([]byte, error) {
+func (j *JSON) RateLimitedIn(url, apiKey string, initialRPS int) ([]byte, error) {
 	// Store limiters, limits, and backoff state per URL
 	type rateLimiter struct {
-		tokens     int
-		limit      int // Current determined limit
-		lastRefill time.Time
+		tokens     float64       // Fractional tokens for sub-second precision
+		ratePerSec float64       // Current determined rate per second
+		lastRefill time.Time     // Last time tokens were added
 		backoff    time.Duration // Increasing backoff for repeated failures
 		mu         sync.Mutex
 	}
@@ -98,8 +98,8 @@ func (j *JSON) RateLimitedIn(url, apiKey string, initialLimit int) ([]byte, erro
 	rl, exists := static.limiters[url]
 	if !exists {
 		rl = &rateLimiter{
-			tokens:     initialLimit,
-			limit:      initialLimit,
+			tokens:     float64(initialRPS),
+			ratePerSec: float64(initialRPS),
 			lastRefill: time.Now(),
 			backoff:    time.Second, // Initial backoff of 1 second
 		}
@@ -110,28 +110,32 @@ func (j *JSON) RateLimitedIn(url, apiKey string, initialLimit int) ([]byte, erro
 	// Acquire a token with backoff if needed
 	rl.mu.Lock()
 
-	// Refill tokens if enough time has passed (once per minute)
+	// Calculate token refill based on time elapsed
 	now := time.Now()
-	if now.Sub(rl.lastRefill) >= time.Minute {
-		rl.tokens = rl.limit
+	elapsed := now.Sub(rl.lastRefill).Seconds()
+	if elapsed > 0 {
+		// Add tokens based on rate per second and time elapsed
+		newTokens := elapsed * rl.ratePerSec
+		rl.tokens = min(rl.ratePerSec, rl.tokens+newTokens) // Cap at max rate
 		rl.lastRefill = now
 	}
 
-	// If no tokens available, wait until next refill
-	if rl.tokens <= 0 {
-		waitTime := time.Minute - now.Sub(rl.lastRefill)
+	// If no tokens available, wait until we have enough
+	if rl.tokens < 1.0 {
+		// Calculate wait time needed for 1 token
+		waitTime := time.Duration((1.0 - rl.tokens) / rl.ratePerSec * float64(time.Second))
 		rl.mu.Unlock()
 
 		select {
 		case <-time.After(waitTime):
-			return j.RateLimitedIn(url, apiKey, initialLimit) // Retry after waiting
+			return j.RateLimitedIn(url, apiKey, initialRPS) // Retry after waiting
 		case <-j.CTX.Done():
 			return nil, j.CTX.Err() // Respect context cancellation
 		}
 	}
 
 	// Consume a token
-	rl.tokens--
+	rl.tokens -= 1.0
 	rl.mu.Unlock()
 
 	// Execute the request directly instead of using j.In to check response headers
@@ -147,10 +151,9 @@ func (j *JSON) RateLimitedIn(url, apiKey string, initialLimit int) ([]byte, erro
 
 	resp, err := j.HTTP.Do(req)
 	if err != nil {
-		// Network error - apply backoff and reduce limit
+		// Network error - apply backoff and reduce rate
 		rl.mu.Lock()
-		rl.limit = max(1, rl.limit/2) // Reduce limit by half, minimum 1
-		rl.tokens = max(0, rl.tokens-1)
+		rl.ratePerSec = max(0.1, rl.ratePerSec/2) // Reduce rate by half, minimum 0.1 req/sec
 		rl.mu.Unlock()
 		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
@@ -161,9 +164,9 @@ func (j *JSON) RateLimitedIn(url, apiKey string, initialLimit int) ([]byte, erro
 		// We hit a rate limit - automatically adjust
 		rl.mu.Lock()
 
-		// Reduce the limit if we hit a rate limit
-		rl.limit = max(1, rl.limit-2)
-		rl.tokens = 0 // Force waiting
+		// Reduce the rate if we hit a rate limit
+		rl.ratePerSec = max(0.1, rl.ratePerSec*0.75) // Reduce to 75% of current rate
+		rl.tokens = 0                                // Force waiting
 
 		// Check if server provides Retry-After header
 		if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
@@ -173,8 +176,8 @@ func (j *JSON) RateLimitedIn(url, apiKey string, initialLimit int) ([]byte, erro
 		} else {
 			// No Retry-After, increase backoff exponentially
 			rl.backoff *= 2
-			if rl.backoff > time.Minute {
-				rl.backoff = time.Minute
+			if rl.backoff > 30*time.Second {
+				rl.backoff = 30 * time.Second // Cap at 30s
 			}
 		}
 
@@ -184,34 +187,69 @@ func (j *JSON) RateLimitedIn(url, apiKey string, initialLimit int) ([]byte, erro
 		// Wait for the specified backoff duration
 		select {
 		case <-time.After(backoff):
-			return j.RateLimitedIn(url, apiKey, initialLimit)
+			return j.RateLimitedIn(url, apiKey, initialRPS)
 		case <-j.CTX.Done():
 			return nil, j.CTX.Err()
 		}
 	}
 
-	// Check for rate limit headers to adjust our limit automatically
-	// Common headers: X-RateLimit-Limit, X-RateLimit-Remaining, RateLimit-Limit, etc.
-	remaining := -1
-	for _, header := range []string{
-		"X-RateLimit-Remaining",
-		"X-Rate-Limit-Remaining",
-		"RateLimit-Remaining",
-	} {
-		if val := resp.Header.Get(header); val != "" {
-			if rem, err := fmt.Sscanf(val, "%d", &remaining); err == nil && rem > 0 {
-				break
-			}
+	// Check for rate limit headers to adjust our rate automatically
+	// Try to find rate limit info in headers
+	rateInfo := struct {
+		limit     int // Max requests allowed
+		remaining int // Requests remaining
+		reset     int // Seconds until reset
+	}{
+		limit:     -1,
+		remaining: -1,
+		reset:     -1,
+	}
+
+	// Check common rate limit headers
+	for _, limitHeader := range []string{"X-RateLimit-Limit", "RateLimit-Limit"} {
+		if val := resp.Header.Get(limitHeader); val != "" {
+			fmt.Sscanf(val, "%d", &rateInfo.limit)
+			break
 		}
 	}
 
-	// Adjust limit based on headers if we got useful info
-	if remaining > 0 {
+	for _, remainingHeader := range []string{"X-RateLimit-Remaining", "RateLimit-Remaining"} {
+		if val := resp.Header.Get(remainingHeader); val != "" {
+			fmt.Sscanf(val, "%d", &rateInfo.remaining)
+			break
+		}
+	}
+
+	for _, resetHeader := range []string{"X-RateLimit-Reset", "RateLimit-Reset"} {
+		if val := resp.Header.Get(resetHeader); val != "" {
+			fmt.Sscanf(val, "%d", &rateInfo.reset)
+			break
+		}
+	}
+
+	// If we have meaningful rate limit info, adjust our rate
+	if rateInfo.limit > 0 && rateInfo.reset > 0 {
 		rl.mu.Lock()
-		// If we have a significant number of remaining requests,
-		// our current limit might be too conservative
-		if remaining > rl.limit*2 {
-			rl.limit = min(remaining, rl.limit*2) // Gradually increase, don't jump too much
+		// Calculate ideal rate: limit/reset gives requests per second
+		idealRate := float64(rateInfo.limit) / float64(rateInfo.reset)
+		// Use 80% of the ideal rate to leave some margin
+		safeRate := idealRate * 0.8
+
+		// Gradually adjust our rate toward the safe rate
+		if safeRate > rl.ratePerSec {
+			// Increase rate slowly
+			rl.ratePerSec = min(safeRate, rl.ratePerSec*1.1)
+		} else if safeRate < rl.ratePerSec {
+			// Decrease rate more quickly
+			rl.ratePerSec = max(0.1, safeRate)
+		}
+		rl.mu.Unlock()
+	} else if rateInfo.remaining > 0 {
+		// If we only have remaining info, use it as a hint
+		rl.mu.Lock()
+		if rateInfo.remaining > int(rl.ratePerSec*10) {
+			// If we have lots of requests remaining, we might be too conservative
+			rl.ratePerSec = min(float64(rateInfo.remaining)/10, rl.ratePerSec*1.2)
 		}
 		rl.mu.Unlock()
 	}
@@ -226,14 +264,12 @@ func (j *JSON) RateLimitedIn(url, apiKey string, initialLimit int) ([]byte, erro
 		return nil, fmt.Errorf("empty response body")
 	}
 
-	// If we got here, the request was successful
-	// Reset backoff on success and consider increasing limit slightly
+	// Success case - gradually increase rate if we're successful
 	rl.mu.Lock()
 	rl.backoff = time.Second // Reset backoff
-	// Very gradually increase limit on success to find optimal rate
-	if rl.tokens == 0 && now.Sub(rl.lastRefill) < 30*time.Second {
-		// If we're using up tokens quickly, we might be under-limiting
-		rl.limit++
+	// Very gradually increase rate on success
+	if rl.tokens < 0.1 { // If we're using tokens quickly
+		rl.ratePerSec *= 1.01 // Increase by 1%
 	}
 	rl.mu.Unlock()
 

@@ -4,16 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"sync"
-
-	"github.com/redis/go-redis/v9"
+	"time"
 )
 
 type State struct {
 	Mu   *sync.Mutex
 	Data *Data
 	Ctx  context.Context
-	Map  map[string]map[string]any
+	Map  map[string]any
 }
 
 func NewState(data *Data, ctx context.Context) *State {
@@ -21,87 +21,61 @@ func NewState(data *Data, ctx context.Context) *State {
 		Mu:   &sync.Mutex{},
 		Data: data,
 		Ctx:  ctx,
-		Map:  make(map[string]map[string]any),
+		Map:  make(map[string]any),
 	}
 	state.LoadState()
 	return state
 }
 
-func (s *State) Add(pkg string, key string, value any) error {
-	s.Mu.Lock()
-	defer s.Mu.Unlock()
-
-	if _, exists := s.Map[pkg]; !exists {
-		s.Map[pkg] = make(map[string]any)
-	}
-
-	s.Map[pkg][key] = value
-
-	state, err := json.Marshal(s.Map)
-	if err != nil {
-		return fmt.Errorf("failed to marshal state: %w", err)
-	}
-
-	result, err := s.Data.RB.ZRevRangeWithScores(s.Ctx, "state", 0, 0).Result()
-	if err != nil {
-		return fmt.Errorf("failed to retrieve highest score from sorted set: %w", err)
-	}
-
-	var nextScore float64 = 1
-	if len(result) > 0 {
-		nextScore = result[0].Score + 1
-	}
-
-	if err := s.Data.RB.ZAdd(s.Ctx, "state", redis.Z{
-		Score:  nextScore,
-		Member: state,
-	}).Err(); err != nil {
-		return fmt.Errorf("failed to add state to sorted set: %w", err)
-	}
-
-	if err := s.Data.RB.ZRemRangeByRank(s.Ctx, "state", 0, -3).Err(); err != nil {
-		return fmt.Errorf("failed to trim old states from sorted set: %w", err)
-	}
-
-	return nil
-}
 func (s *State) LoadState() error {
-	result, err := s.Data.RB.ZRevRangeWithScores(s.Ctx, "state", 0, 0).Result()
+	result, err := s.Data.RB.HGetAll(s.Ctx, "state").Result()
 	if err != nil {
-		return fmt.Errorf("failed to retrieve latest state from Redis: %w", err)
+		return fmt.Errorf("failed to retrieve state from Redis: %w", err)
 	}
 	if len(result) == 0 {
 		return fmt.Errorf("no state found in Redis")
 	}
-	latestState := result[0].Member.(string)
+	var latestTimestamp string
+	for ts := range result {
+		if ts > latestTimestamp {
+			latestTimestamp = ts
+		}
+	}
+	latestState := result[latestTimestamp]
 	if err := json.Unmarshal([]byte(latestState), &s.Map); err != nil {
 		return fmt.Errorf("failed to unmarshal latest state: %w", err)
 	}
 	return nil
 }
 
-func (s *State) GetValue(pkg string, key string) (any, error) {
+func (s *State) Count(key string, value any, persist bool) error {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
 
-	packageMap, exists := s.Map[pkg]
-	if !exists {
-		return nil, fmt.Errorf("package %s not found in state", pkg)
+	s.Map[key] = value
+	if !persist {
+		return nil
 	}
-	value, exists := packageMap[key]
-	if !exists {
-		return nil, fmt.Errorf("key %s not found in package %s", key, pkg)
+
+	state, err := json.Marshal(s.Map)
+	if err != nil {
+		return fmt.Errorf("failed to marshal state: %w", err)
 	}
-	return value, nil
+
+	timestamp := strconv.FormatInt(time.Now().UnixMicro(), 10)
+	if err := s.Data.RB.HSet(s.Ctx, "state", timestamp, state).Err(); err != nil {
+		return fmt.Errorf("failed to add state to hash: %w", err)
+	}
+	return nil
 }
 
-func (s *State) GetMap(pkg string) (map[string]any, error) {
+func (s *State) Read(key string) (any, error) {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
 
-	packageMap, exists := s.Map[pkg]
+	value, exists := s.Map[key]
 	if !exists {
-		return nil, fmt.Errorf("package %s not found in state", pkg)
+		return nil, fmt.Errorf("key %s not found in state", key)
 	}
-	return packageMap, nil
+	return value, nil
 }

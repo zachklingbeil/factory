@@ -14,6 +14,7 @@ type State struct {
 	Data *Data
 	Ctx  context.Context
 	Map  map[string]any
+	Keys []string // Track insertion order
 }
 
 func NewState(data *Data, ctx context.Context) *State {
@@ -22,6 +23,7 @@ func NewState(data *Data, ctx context.Context) *State {
 		Data: data,
 		Ctx:  ctx,
 		Map:  make(map[string]any),
+		Keys: make([]string, 0, 1000),
 	}
 	state.LoadState()
 	return state
@@ -52,7 +54,20 @@ func (s *State) Count(key string, value any, persist bool) error {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
 
+	// If key is new, add to Keys slice
+	if _, exists := s.Map[key]; !exists {
+		s.Keys = append(s.Keys, key)
+	}
+
 	s.Map[key] = value
+
+	// Enforce max length
+	if len(s.Map) > 1000 {
+		oldest := s.Keys[0]
+		s.Keys = s.Keys[1:]
+		delete(s.Map, oldest)
+	}
+
 	if !persist {
 		return nil
 	}
@@ -69,13 +84,4 @@ func (s *State) Count(key string, value any, persist bool) error {
 	return nil
 }
 
-func (s *State) Read(key string) (any, error) {
-	s.Mu.Lock()
-	defer s.Mu.Unlock()
-
-	value, exists := s.Map[key]
-	if !exists {
-		return nil, fmt.Errorf("key %s not found in state", key)
-	}
-	return value, nil
-}
+// add

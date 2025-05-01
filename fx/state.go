@@ -50,6 +50,17 @@ func (s *State) LoadState() error {
 	return nil
 }
 
+func (s *State) Read(key string) (any, error) {
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+
+	value, exists := s.Map[key]
+	if !exists {
+		return nil, fmt.Errorf("key %s not found in state", key)
+	}
+	return value, nil
+}
+
 func (s *State) Count(key string, value any, persist bool) error {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()

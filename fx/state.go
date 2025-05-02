@@ -72,13 +72,6 @@ func (s *State) Count(key string, value any, persist bool) error {
 
 	s.Map[key] = value
 
-	// Enforce max length
-	if len(s.Map) > 1000 {
-		oldest := s.Keys[0]
-		s.Keys = s.Keys[1:]
-		delete(s.Map, oldest)
-	}
-
 	if !persist {
 		return nil
 	}
@@ -92,7 +85,20 @@ func (s *State) Count(key string, value any, persist bool) error {
 	if err := s.Data.RB.HSet(s.Ctx, "state", timestamp, state).Err(); err != nil {
 		return fmt.Errorf("failed to add state to hash: %w", err)
 	}
+
+	// Enforce max length on Redis set
+	const maxLen = 1000
+	fields, err := s.Data.RB.HKeys(s.Ctx, "state").Result()
+	if err != nil {
+		return fmt.Errorf("failed to get state keys from Redis: %w", err)
+	}
+	if len(fields) > maxLen {
+		// Find the oldest key(s) and delete them
+		oldest := fields[0 : len(fields)-maxLen]
+		if err := s.Data.RB.HDel(s.Ctx, "state", oldest...).Err(); err != nil {
+			return fmt.Errorf("failed to trim state hash in Redis: %w", err)
+		}
+	}
+
 	return nil
 }
-
-// add

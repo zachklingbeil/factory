@@ -46,7 +46,7 @@ func (s *State) Get(key string) (any, bool) {
 	return val, ok
 }
 
-func (s *State) Set(key string, value any) error {
+func (s *State) Count(key string, value any) error {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
 	s.Map[key] = value
@@ -66,7 +66,7 @@ func (s *State) Up(ctx context.Context, key string, from int64) <-chan int64 {
 			case <-ctx.Done():
 				return
 			case ch <- i:
-				s.Set(key, i)
+				s.Count(key, i)
 			}
 		}
 	}()
@@ -82,7 +82,7 @@ func (s *State) Down(ctx context.Context, key string, from int64) <-chan int64 {
 			case <-ctx.Done():
 				return
 			case ch <- i:
-				s.Set(key, i)
+				s.Count(key, i)
 			}
 		}
 	}()

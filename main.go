@@ -20,7 +20,6 @@ type Factory struct {
 	Data  *fx.Data
 	State *fx.State
 	Json  *fx.JSON
-	Math  *fx.Math
 	Mu    *sync.Mutex
 	Rw    *sync.RWMutex
 	When  *sync.Cond
@@ -49,7 +48,6 @@ func Assemble() *Factory {
 		Json:  json,
 		Eth:   eth,
 		Http:  http,
-		Math:  &fx.Math{},
 		Rpc:   rpc,
 		Mu:    mu,
 		Rw:    rw,

@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"sync"
-	"time"
 )
 
 type State struct {
@@ -14,7 +12,6 @@ type State struct {
 	Data *Data
 	Ctx  context.Context
 	Map  map[string]any
-	Keys []string // Track insertion order
 }
 
 func NewState(data *Data, ctx context.Context) *State {
@@ -23,82 +20,90 @@ func NewState(data *Data, ctx context.Context) *State {
 		Data: data,
 		Ctx:  ctx,
 		Map:  make(map[string]any),
-		Keys: make([]string, 0, 1000),
 	}
 	state.LoadState()
 	return state
 }
 
 func (s *State) LoadState() error {
-	result, err := s.Data.RB.HGetAll(s.Ctx, "state").Result()
+	result, err := s.Data.RB.Get(s.Ctx, "state").Result()
 	if err != nil {
 		return fmt.Errorf("failed to retrieve state from Redis: %w", err)
 	}
-	if len(result) == 0 {
+	if result == "" {
 		return fmt.Errorf("no state found in Redis")
 	}
-	var latestTimestamp string
-	for ts := range result {
-		if ts > latestTimestamp {
-			latestTimestamp = ts
-		}
-	}
-	latestState := result[latestTimestamp]
-	if err := json.Unmarshal([]byte(latestState), &s.Map); err != nil {
-		return fmt.Errorf("failed to unmarshal latest state: %w", err)
+	if err := json.Unmarshal([]byte(result), &s.Map); err != nil {
+		return fmt.Errorf("failed to unmarshal state: %w", err)
 	}
 	return nil
 }
 
-func (s *State) Read(key string) (any, error) {
+func (s *State) Get(key string) (any, bool) {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
-
-	value, exists := s.Map[key]
-	if !exists {
-		return nil, fmt.Errorf("key %s not found in state", key)
-	}
-	return value, nil
+	val, ok := s.Map[key]
+	return val, ok
 }
 
-func (s *State) Count(key string, value any, persist bool) error {
+func (s *State) Set(key string, value any) error {
 	s.Mu.Lock()
 	defer s.Mu.Unlock()
-
-	// If key is new, add to Keys slice
-	if _, exists := s.Map[key]; !exists {
-		s.Keys = append(s.Keys, key)
-	}
-
 	s.Map[key] = value
-
-	if !persist {
-		return nil
-	}
-
 	state, err := json.Marshal(s.Map)
 	if err != nil {
-		return fmt.Errorf("failed to marshal state: %w", err)
+		return err
 	}
-
-	timestamp := strconv.FormatInt(time.Now().UnixMicro(), 10)
-	if err := s.Data.RB.HSet(s.Ctx, "state", timestamp, state).Err(); err != nil {
-		return fmt.Errorf("failed to add state to hash: %w", err)
-	}
-
-	// Enforce max length on Redis set
-	const maxLen = 1000
-	fields, err := s.Data.RB.HKeys(s.Ctx, "state").Result()
-	if err != nil {
-		return fmt.Errorf("failed to get state keys from Redis: %w", err)
-	}
-	if len(fields) > maxLen {
-		// Find the oldest key(s) and delete them
-		oldest := fields[0 : len(fields)-maxLen]
-		if err := s.Data.RB.HDel(s.Ctx, "state", oldest...).Err(); err != nil {
-			return fmt.Errorf("failed to trim state hash in Redis: %w", err)
-		}
-	}
-
-	return nil
+	return s.Data.RB.Set(s.Ctx, "state", state, 0).Err()
 }
+
+func (s *State) Up(ctx context.Context, key string, from int64) <-chan int64 {
+	ch := make(chan int64)
+	go func() {
+		defer close(ch)
+		for i := from; ; i++ {
+			select {
+			case <-ctx.Done():
+				return
+			case ch <- i:
+				s.Set(key, i)
+			}
+		}
+	}()
+	return ch
+}
+
+func (s *State) Down(ctx context.Context, key string, from int64) <-chan int64 {
+	ch := make(chan int64)
+	go func() {
+		defer close(ch)
+		for i := from; i >= 1; i-- {
+			select {
+			case <-ctx.Done():
+				return
+			case ch <- i:
+				s.Set(key, i)
+			}
+		}
+	}()
+	return ch
+}
+
+// this will become left and right, for adding and subtracting
+// func (m *Math) Int(value string) *big.Int {
+// 	bigIntValue := new(big.Int)
+// 	if _, ok := bigIntValue.SetString(value, 10); !ok {
+// 		log.Error("Failed to convert string to big.Int: %s", value)
+// 	}
+// 	return bigIntValue
+// }
+
+// func (m *Math) StringToInt(value string) *big.Int {
+// 	i := new(big.Int)
+// 	_, ok := i.SetString(value, 10)
+// 	if !ok {
+// 		log.Error("Failed to convert string to big.Int: %s", value)
+// 		return nil
+// 	}
+// 	return i
+// }

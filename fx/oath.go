@@ -2,74 +2,36 @@ package fx
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strings"
-	"sync"
 	"time"
+
+	"golang.org/x/oauth2/clientcredentials"
 )
 
-type Oauth struct {
-	ClientID     string
-	ClientSecret string
-	TokenURL     string
-	HTTPClient   *http.Client
-	Ctx          context.Context
+// NewOAuthClient returns an authenticated HTTP client (machine-to-machine, no user interaction)
+func NewOAuthClient(ctx context.Context, clientID, clientSecret, tokenURL string, scopes []string) (*http.Client, error) {
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
 
-	accessToken string
-	expiresAt   time.Time
-	mu          sync.Mutex
-}
-
-func NewOauth(ctx context.Context, client *http.Client, clientID, clientSecret, tokenURL string) *Oauth {
-	return &Oauth{
+	clientConfig := &clientcredentials.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		TokenURL:     tokenURL,
-		HTTPClient:   client,
-		Ctx:          ctx,
-	}
-}
-
-func (o *Oauth) GetAccessToken() (string, error) {
-	o.mu.Lock()
-	defer o.mu.Unlock()
-
-	if time.Now().Before(o.expiresAt) && o.accessToken != "" {
-		return o.accessToken, nil
+		Scopes:       scopes,
 	}
 
-	data := url.Values{}
-	data.Set("grant_type", "client_credentials")
-	req, err := http.NewRequestWithContext(o.Ctx, "POST", o.TokenURL, strings.NewReader(data.Encode()))
+	// Get token and create HTTP client
+	client := clientConfig.Client(ctx)
+	if client == nil {
+		return nil, fmt.Errorf("failed to create OAuth client")
+	}
+
+	// Test the client by making a token request to validate credentials
+	token, err := clientConfig.Token(ctx)
 	if err != nil {
-		return "", err
+		return nil, fmt.Errorf("OAuth client credentials flow failed: %w", err)
 	}
-	req.SetBasicAuth(o.ClientID, o.ClientSecret)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := o.HTTPClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("token request failed: %s", resp.Status)
-	}
-
-	var result struct {
-		AccessToken string `json:"access_token"`
-		ExpiresIn   int    `json:"expires_in"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", err
-	}
-
-	o.accessToken = result.AccessToken
-	o.expiresAt = time.Now().Add(time.Duration(result.ExpiresIn-60) * time.Second) // refresh 1 min early
-
-	return o.accessToken, nil
+	fmt.Printf("✓ OAuth client authenticated successfully (token expires: %v)\n", token.Expiry)
+	return client, nil
 }

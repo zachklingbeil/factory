@@ -1,4 +1,4 @@
-package main
+package factory
 
 import (
 	"context"
@@ -8,9 +8,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	_ "github.com/lib/pq"
-	"github.com/zachklingbeil/factory/api/json"
 	"github.com/zachklingbeil/factory/fx"
+	"github.com/zachklingbeil/factory/fx/api"
 )
 
 type Factory struct {
@@ -18,11 +17,7 @@ type Factory struct {
 	Eth  *ethclient.Client
 	Http *http.Client
 	Rpc  *rpc.Client
-	Json *json.JSON
-	Sync *State
-}
-
-type State struct {
+	Api  *api.API
 	Mu   *sync.Mutex
 	Rw   *sync.RWMutex
 	When *sync.Cond
@@ -31,7 +26,7 @@ type State struct {
 func Assemble() *Factory {
 	ctx := context.Background()
 	http := &http.Client{}
-	json := json.Json(*http, ctx)
+	api := api.NewAPI("/factory/interface", "/factory/content")
 
 	rpc, eth, err := fx.Node(ctx)
 	if err != nil {
@@ -41,19 +36,16 @@ func Assemble() *Factory {
 	mu := &sync.Mutex{}
 	rw := &sync.RWMutex{}
 	when := sync.NewCond(mu)
-	sync := &State{
-		Mu:   mu,
-		Rw:   rw,
-		When: when,
-	}
 
 	factory := &Factory{
 		Ctx:  ctx,
-		Json: json,
 		Eth:  eth,
 		Http: http,
 		Rpc:  rpc,
-		Sync: sync,
+		Api:  api,
+		Mu:   mu,
+		Rw:   rw,
+		When: when,
 	}
 	return factory
 }

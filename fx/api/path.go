@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -8,40 +9,35 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
-type API struct {
-	Interface string
-	Content   string
+type Path struct {
 	Endpoints map[string][]string
+	Router    *mux.Router
+	CTX       context.Context
 }
 
-func NewAPI(dir string, contentDir string) *API {
-	api := &API{
-		Interface: dir,
-		Content:   contentDir,
+func NewPath(port string, router *mux.Router, ctx context.Context) *Path {
+	p := &Path{
 		Endpoints: make(map[string][]string),
+		Router:    router,
+		CTX:       ctx,
 	}
 
-	api.loadEndpoints()
-
-	router := mux.NewRouter().StrictSlash(true)
-	router.Use(api.corsMiddleware())
-	router.HandleFunc("/{type}", api.handleRequest).Methods("GET")
-	router.HandleFunc("/{type}/{filename}", api.handleRequest).Methods("GET")
-	router.PathPrefix("/").Handler(http.FileServer(http.Dir(api.Interface)))
+	p.Router.HandleFunc("/{type}", p.handleRequest).Methods("GET")
+	p.Router.HandleFunc("/{type}/{filename}", p.handleRequest).Methods("GET")
 
 	go func() {
-		log.Fatal(http.ListenAndServe(":10001", router))
+		log.Fatal(http.ListenAndServe(":"+port, p.Router))
 	}()
-	return api
+
+	return p
 }
 
-func (a *API) loadEndpoints() {
+func (p *Path) LoadEndpoints(contentDir string) {
 	for _, contentType := range []string{"text", "image", "video"} {
-		dirPath := filepath.Join(a.Content, contentType)
+		dirPath := filepath.Join(contentDir, contentType)
 		if files, err := os.ReadDir(dirPath); err == nil {
 			var fileNames []string
 			for _, file := range files {
@@ -49,19 +45,19 @@ func (a *API) loadEndpoints() {
 					fileNames = append(fileNames, file.Name())
 				}
 			}
-			a.Endpoints[contentType] = fileNames
+			p.Endpoints[contentType] = fileNames
 		} else {
 			log.Printf("Warning: Could not read %s directory: %v", contentType, err)
 		}
 	}
 }
 
-func (a *API) handleRequest(w http.ResponseWriter, r *http.Request) {
+func (p *Path) handleRequest(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	contentType := vars["type"]
 	filename := vars["filename"]
 
-	files, exists := a.Endpoints[contentType]
+	files, exists := p.Endpoints[contentType]
 	if !exists {
 		http.Error(w, "Content type not found", http.StatusNotFound)
 		return
@@ -93,13 +89,5 @@ func (a *API) handleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.ServeFile(w, r, filepath.Join(a.Content, contentType, long))
-}
-
-func (a *API) corsMiddleware() mux.MiddlewareFunc {
-	return handlers.CORS(
-		handlers.AllowedHeaders([]string{"X-Requested-With", "X-API-KEY", "Content-Type", "Peer", "Cache-Control", "Connection"}),
-		handlers.AllowedOrigins([]string{"*"}),
-		handlers.AllowedMethods([]string{"GET"}),
-	)
+	http.ServeFile(w, r, filepath.Join(p.Content, contentType, long))
 }

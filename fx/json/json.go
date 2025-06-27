@@ -10,9 +10,9 @@ type JSON struct {
 	HTTP *http.Client
 }
 
-func NewJSON(ctx context.Context, client *http.Client) *JSON {
+func NewJSON(ctx context.Context) *JSON {
 	return &JSON{
 		Ctx:  ctx,
-		HTTP: client,
+		HTTP: &http.Client{},
 	}
 }

@@ -1,34 +1,48 @@
 package api
 
 import (
-	"context"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/zachklingbeil/factory/fx/json"
 )
 
 type API struct {
-	Path     *Path
-	Pathless *Pathless
-	HTTP     *http.Client
-	Router   *mux.Router
-	CTX      context.Context
+	JSON      *json.JSON
+	Router    *mux.Router
+	Endpoints map[string][]string
+	Pathless  string
 }
 
-func NewAPI(dir, contentDir string) *API {
+func NewAPI(json *json.JSON) *API {
 	api := &API{
-		HTTP:   &http.Client{},
-		CTX:    context.Background(),
-		Router: mux.NewRouter().StrictSlash(true),
+		JSON:      json,
+		Router:    mux.NewRouter().StrictSlash(true),
+		Endpoints: make(map[string][]string),
 	}
-
 	api.Router.Use(api.corsMiddleware())
-	go func() {
-		log.Fatal(http.ListenAndServe(":10001", api.Router))
-	}()
 	return api
+}
+
+func (a *API) ServePathless(dir string) error {
+	a.Router.PathPrefix("/").Handler(http.FileServer(http.Dir(dir)))
+	go func() {
+		log.Fatal(http.ListenAndServe(":10002", a.Router))
+	}()
+	return nil
+}
+
+func (a *API) NewPath(dir string) error {
+	a.LoadEndpoints(dir)
+	a.Router.HandleFunc("/{key}", a.handleRequest).Methods("GET")
+	a.Router.HandleFunc("/{key}/{value}", a.handleRequest).Methods("GET")
+
+	go func() {
+		log.Fatal(http.ListenAndServe(":10003", a.Router))
+	}()
+	return nil
 }
 
 func (a *API) corsMiddleware() mux.MiddlewareFunc {

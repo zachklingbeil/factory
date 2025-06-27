@@ -2,21 +2,20 @@ package factory
 
 import (
 	"context"
-	"log"
-	"net/http"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/zachklingbeil/factory/fx"
 	"github.com/zachklingbeil/factory/fx/api"
+	"github.com/zachklingbeil/factory/fx/json"
 )
 
 type Factory struct {
 	Ctx  context.Context
 	Eth  *ethclient.Client
-	Http *http.Client
 	Rpc  *rpc.Client
+	Json *json.JSON
 	Api  *api.API
 	Mu   *sync.Mutex
 	Rw   *sync.RWMutex
@@ -25,13 +24,9 @@ type Factory struct {
 
 func Assemble() *Factory {
 	ctx := context.Background()
-	http := &http.Client{}
-	api := api.NewAPI("/factory/interface", "/factory/content")
-
-	rpc, eth, err := fx.Node(ctx)
-	if err != nil {
-		log.Fatalf("Error creating Ethereum node: %v", err)
-	}
+	json := json.NewJSON(ctx)
+	api := api.NewAPI(json)
+	rpc, eth := fx.Node(ctx)
 
 	mu := &sync.Mutex{}
 	rw := &sync.RWMutex{}
@@ -40,7 +35,6 @@ func Assemble() *Factory {
 	factory := &Factory{
 		Ctx:  ctx,
 		Eth:  eth,
-		Http: http,
 		Rpc:  rpc,
 		Api:  api,
 		Mu:   mu,

@@ -16,7 +16,7 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 )
 
-// Establish geth.ipc connection (http, websocket disabled)
+// Establish geth.ipc connection
 func Node(ctx context.Context) (*rpc.Client, *ethclient.Client) {
 	rpc, err := rpc.DialIPC(ctx, "/ethereum/geth.ipc") // Updated path
 	if err != nil {

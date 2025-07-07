@@ -1,18 +1,22 @@
-package json
+package fx
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"sync"
+	"time"
 )
 
 // GetOption represents a function that modifies a GET request
 type GetOption func(*http.Request)
 
 // Get executes HTTP GET requests with the given URL and options
-func (j *JSON) Get(endpoint string, options ...GetOption) ([]byte, error) {
-	req, err := j.createRequest(endpoint)
+func (a *API) Get(endpoint string, options ...GetOption) ([]byte, error) {
+	req, err := a.createRequest(endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -20,17 +24,17 @@ func (j *JSON) Get(endpoint string, options ...GetOption) ([]byte, error) {
 	for _, option := range options {
 		option(req)
 	}
-	return j.executeRequest(req)
+	return a.executeRequest(req)
 }
 
 // createRequest creates and configures the base HTTP GET request
-func (j *JSON) createRequest(endpoint string) (*http.Request, error) {
+func (a *API) createRequest(endpoint string) (*http.Request, error) {
 	parsedURL, err := url.Parse(endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse URL %s: %w", endpoint, err)
 	}
 
-	req, err := http.NewRequestWithContext(j.Ctx, "GET", parsedURL.String(), nil)
+	req, err := http.NewRequestWithContext(a.Ctx, "GET", parsedURL.String(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GET request for URL %s: %w", parsedURL.String(), err)
 	}
@@ -39,8 +43,8 @@ func (j *JSON) createRequest(endpoint string) (*http.Request, error) {
 }
 
 // executeRequest executes the HTTP request and returns the response body
-func (j *JSON) executeRequest(req *http.Request) ([]byte, error) {
-	resp, err := j.HTTP.Do(req)
+func (a *API) executeRequest(req *http.Request) ([]byte, error) {
+	resp, err := a.HTTP.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute GET request: %w", err)
 	}
@@ -124,5 +128,66 @@ func WithQueryMap(params map[string]string) GetOption {
 			query.Set(key, value)
 		}
 		req.URL.RawQuery = query.Encode()
+	}
+}
+
+// Out writes single response for http requests, using a function to source data and a locker to synchronize access or an HTTP 500 error when the input function fails or JSON encoding fails.
+func (a *API) Out(w http.ResponseWriter, input func() (any, error), locker sync.Locker) {
+	locker.Lock()
+	data, err := input()
+	locker.Unlock()
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// OutSSE is Out at a defined interval, streams responses until the client disconnects or the context is canceled.
+func (a *API) OutSSE(w http.ResponseWriter, r *http.Request, input func() (any, error), interval time.Duration) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming not supported", http.StatusInternalServerError)
+		return
+	}
+
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	ctx := r.Context()
+	var buf bytes.Buffer
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			data, err := input()
+			if err != nil {
+				return
+			}
+
+			jsonData, err := json.Marshal(data)
+			if err != nil {
+				return
+			}
+
+			buf.Reset()
+			buf.WriteString("data: ")
+			buf.Write(jsonData)
+			buf.WriteString("\n\n")
+
+			w.Write(buf.Bytes())
+			flusher.Flush()
+		}
 	}
 }

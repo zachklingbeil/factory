@@ -1,26 +1,28 @@
-package api
+package fx
 
 import (
+	"context"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/zachklingbeil/factory/fx/json"
 )
 
 type API struct {
-	JSON      *json.JSON
 	Router    *mux.Router
 	Endpoints map[string][]string
 	Pathless  string
+	Ctx       context.Context
+	HTTP      *http.Client
 }
 
-func NewAPI(json *json.JSON) *API {
+func NewAPI(ctx context.Context) *API {
 	api := &API{
-		JSON:      json,
 		Router:    mux.NewRouter().StrictSlash(true),
 		Endpoints: make(map[string][]string),
+		Ctx:       ctx,
+		HTTP:      &http.Client{},
 	}
 	api.Router.Use(api.corsMiddleware())
 	return api

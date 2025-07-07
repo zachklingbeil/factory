@@ -1,9 +1,11 @@
-package elements
+package constant
 
 import "html/template"
 
-func Head() template.HTML {
-	return template.HTML(`<head>
+type Head template.HTML
+
+func NewHead() *Head {
+	h := Head(template.HTML(`<head>
 	<meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1" />
 	<link rel="icon" href="../src/favicon.svg" />
 	<title>universe</title>
@@ -35,9 +37,10 @@ func Head() template.HTML {
 			  border: medium solid #0000ff;
 			  border-radius: 0.3125em;
 			  font-family: 'Roboto', sans-serif;
-           display: flex;
+		   display: flex;
 			  flex-direction: column;
 		 }
 	</style>
-</head>`)
+</head>`))
+	return &h
 }

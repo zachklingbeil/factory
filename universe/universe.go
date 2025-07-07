@@ -1,11 +1,18 @@
 package universe
 
 import (
-	"github.com/zachklingbeil/factory/universe/elements"
-	"github.com/zachklingbeil/factory/universe/frame"
+	"github.com/zachklingbeil/factory/universe/constant"
+	"github.com/zachklingbeil/factory/universe/element"
 )
 
 type Universe struct {
-	Elements *elements.Elements
-	Frame    *frame.Component
+	Element  *element.Element
+	Constant *constant.Head
+}
+
+func New() *Universe {
+	return &Universe{
+		Element:  element.NewElements(),
+		Constant: constant.NewHead(),
+	}
 }

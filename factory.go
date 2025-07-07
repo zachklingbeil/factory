@@ -53,6 +53,30 @@ func (f *Factory) Node() (*rpc.Client, *ethclient.Client) {
 	return rpc, eth
 }
 
+// Establish geth.ws connection using API key from environment variable
+func (f *Factory) NodeWS(wsURL string) (*rpc.Client, *ethclient.Client, error) {
+	fullURL := fmt.Sprintf("%s/%s", wsURL, os.Getenv("ETH_API_KEY"))
+	rpcClient, err := rpc.DialContext(f.Ctx, fullURL)
+	if err != nil {
+		log.Printf("Failed to connect to Ethereum WebSocket: %v", err)
+		return nil, nil, err
+	}
+	eth := ethclient.NewClient(rpcClient)
+	return rpcClient, eth, nil
+}
+
+// Establish geth.http connection using API key from environment variable
+func (f *Factory) NodeHTTP(httpURL string) (*rpc.Client, *ethclient.Client, error) {
+	fullURL := fmt.Sprintf("%s/%s", httpURL, os.Getenv("ETH_API_KEY"))
+	rpcClient, err := rpc.DialHTTP(fullURL)
+	if err != nil {
+		log.Printf("Failed to connect to Ethereum HTTP: %v", err)
+		return nil, nil, err
+	}
+	eth := ethclient.NewClient(rpcClient)
+	return rpcClient, eth, nil
+}
+
 func (f *Factory) ConnectRedis(dbNumber int) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     "redis:6379",

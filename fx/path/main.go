@@ -26,9 +26,8 @@ func NewAPI(ctx context.Context) *API {
 	}
 
 	api.Router.Use(api.corsMiddleware())
-	api.Router.HandleFunc("/{type}", api.handleRequest).Methods("GET")
-	api.Router.HandleFunc("/{type}/{filename}", api.handleRequest).Methods("GET")
-
+	api.Router.HandleFunc("/{key}", api.handleRequest).Methods("GET")
+	api.Router.HandleFunc("/{key}/{value}", api.handleRequest).Methods("GET")
 	go func() {
 		log.Fatal(http.ListenAndServe(":10002", api.Router))
 	}()

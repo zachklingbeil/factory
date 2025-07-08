@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="icon" href="{{.Favicon}}" />
+		<title>{{.Title}}</title>
+		<style>
+			*,
+			*::before,
+			*::after {
+				box-sizing: border-box;
+				margin: 0;
+				scrollbar-width: none;
+				-ms-overflow-style: none;
+				user-select: none;
+				-webkit-user-select: none;
+				-moz-user-select: none;
+				-ms-user-select: none;
+			}
+			*::-webkit-scrollbar {
+				display: none;
+			}
+			html,
+			body {
+				color: white;
+				background-color: black;
+				overflow: hidden;
+				height: 100vh;
+				width: 100vw;
+				font: 16px/1.5 'Roboto', sans-serif;
+				scroll-behavior: smooth;
+				box-sizing: border-box;
+				border-radius: 0.3125em;
+				display: flex;
+				flex-direction: column;
+			}
+			body {
+				border: medium solid blue;
+			}
+		</style>
+	</head>
+	<body>
+		<main>{{.Main}}</main>
+		<script>
+			fetch('{{.DataURL}}')
+				.then((resp) => resp.text())
+				.then((html) => {
+					document.querySelector('main').innerHTML = html;
+				});
+		</script>
+	</body>
+</html>

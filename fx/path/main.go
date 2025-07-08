@@ -1,7 +1,9 @@
-package fx
+package path
 
 import (
+	"context"
 	"log"
+	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -9,6 +11,29 @@ import (
 
 	"github.com/gorilla/mux"
 )
+
+type API struct {
+	Endpoints map[string]any
+	Router    *mux.Router
+	Ctx       context.Context
+}
+
+func NewAPI(ctx context.Context) *API {
+	api := &API{
+		Router:    mux.NewRouter().StrictSlash(true),
+		Endpoints: make(map[string]any),
+		Ctx:       ctx,
+	}
+
+	api.Router.Use(api.corsMiddleware())
+	api.Router.HandleFunc("/{type}", api.handleRequest).Methods("GET")
+	api.Router.HandleFunc("/{type}/{filename}", api.handleRequest).Methods("GET")
+
+	go func() {
+		log.Fatal(http.ListenAndServe(":10002", api.Router))
+	}()
+	return api
+}
 
 // LoadEndpoints scans contentDir for all directories (keys) and their files (values)
 func (a *API) LoadEndpoints(contentDir string) {
@@ -43,13 +68,18 @@ func (a *API) handleRequest(w http.ResponseWriter, r *http.Request) {
 	key := vars["key"]
 	value := vars["value"]
 
-	files, exists := a.Endpoints[key]
+	rawFiles, exists := a.Endpoints[key]
 	if !exists {
 		http.Error(w, "Key not found", http.StatusNotFound)
 		return
 	}
 
-	// Find file by name without extension
+	files, ok := rawFiles.([]string)
+	if !ok {
+		http.Error(w, "Invalid endpoint data", http.StatusInternalServerError)
+		return
+	}
+
 	var long string
 	for _, file := range files {
 		short := strings.TrimSuffix(file, filepath.Ext(file))
@@ -64,5 +94,11 @@ func (a *API) handleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.ServeFile(w, r, filepath.Join(key, long))
+	filePath := filepath.Join(key, long)
+	mimeType := mime.TypeByExtension(filepath.Ext(long))
+	if mimeType != "" {
+		w.Header().Set("Content-Type", mimeType)
+	}
+
+	http.ServeFile(w, r, filePath)
 }

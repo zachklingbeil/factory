@@ -2,6 +2,7 @@ package factory
 
 import (
 	"context"
+	"html/template"
 	"sync"
 
 	"github.com/zachklingbeil/factory/fx"
@@ -27,5 +28,12 @@ func InitFactory() *Factory {
 		When: when,
 		Fx:   fx.NewFx(ctx),
 	}
+
+	factory.NewComponent(
+		[]template.HTML{u.H1("Hello"), u.Paragraph("World")},
+		factory.WithCSS(map[string]string{".home": "display:flex;"}),
+		universe.WithJS(template.JS("console.log('hi')")),
+	)
+
 	return factory
 }

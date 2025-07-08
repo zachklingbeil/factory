@@ -14,8 +14,8 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
 	"github.com/zachklingbeil/factory/fx/api"
-	"github.com/zachklingbeil/factory/fx/element"
 	"github.com/zachklingbeil/factory/fx/json"
+	"github.com/zachklingbeil/factory/fx/universe"
 
 	"github.com/zachklingbeil/factory/fx/pathless"
 	"golang.org/x/oauth2/clientcredentials"
@@ -24,7 +24,7 @@ import (
 type Fx struct {
 	*api.API
 	*pathless.Pathless
-	*element.Element
+	*universe.Universe
 	ctx  context.Context
 	Json *json.Json
 }
@@ -33,7 +33,7 @@ func NewFx(ctx context.Context) *Fx {
 	return &Fx{
 		API:      api.NewAPI(ctx),
 		Pathless: pathless.NewPathless(),
-		Element:  element.NewElement(),
+		Universe: universe.NewUniverse(),
 		Json:     json.NewJson(ctx),
 		ctx:      ctx,
 	}

@@ -1,4 +1,4 @@
-package element
+package universe
 
 import (
 	"fmt"
@@ -11,12 +11,6 @@ type Element struct {
 	media
 	other
 	format
-}
-
-type Component struct {
-	HTML template.HTML `json:"html"`
-	CSS  template.CSS  `json:"css"`
-	JS   template.JS   `json:"js,omitempty"`
 }
 
 func NewElement() *Element {
@@ -68,8 +62,8 @@ func (t *text) List(items []any, ordered bool) template.HTML {
 
 type media struct{}
 
-func (m *media) Img(src, alt string) template.HTML {
-	return ClosedTag("img", map[string]string{"src": src, "alt": alt, "width": "100%", "height": "auto"})
+func (m *media) Img(src, alt, width, height string) template.HTML {
+	return ClosedTag("img", map[string]string{"src": src, "alt": alt, "width": width, "height": height})
 }
 func (m *media) Video(src string) template.HTML {
 	return template.HTML(fmt.Sprintf(`<video controls src="%s"></video>`, html.EscapeString(src)))

@@ -30,6 +30,7 @@ func NewFx(ctx context.Context) *Fx {
 	return &Fx{
 		Api:      path.NewAPI(ctx),
 		pathless: pathless.NewPathless(),
+		Ctx:      ctx,
 	}
 }
 

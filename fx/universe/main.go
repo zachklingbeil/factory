@@ -6,79 +6,56 @@ import (
 )
 
 type Universe struct {
-	*Element
-	Components []Component
+	Element
+	Components map[string]*Component
 }
 
 func NewUniverse() *Universe {
 	return &Universe{
-		Components: make([]Component, 0),
-		Element:    NewElement(),
+		Components: make(map[string]*Component),
 	}
 }
 
-type Component struct {
-	HTML template.HTML
-	CSS  template.CSS
-	JS   template.JS
+// Add adds a component to the universe with a key
+func (u *Universe) Add(key string, component *Component) *Universe {
+	u.Components[key] = component
+	return u
 }
 
-// ComponentOption is a function that configures a Component
-type ComponentOption func(*Component)
+// Render renders the entire universe as HTML
+func (u *Universe) Render() template.HTML {
+	var content strings.Builder
 
-// NewComponent creates a Component from HTML elements and optional CSS/JS, and adds it to the Universe.
-func (u *Universe) NewComponent(htmls []template.HTML, opts ...ComponentOption) Component {
-	component := Component{
-		HTML: combineHTML(htmls...),
+	for _, component := range u.Components {
+		content.WriteString(string(component.Render()))
 	}
 
-	for _, opt := range opts {
-		opt(&component)
-	}
-
-	u.Components = append(u.Components, component)
-	return component
+	return template.HTML(content.String())
 }
 
-// combineHTML efficiently aggregates multiple template.HTML elements.
-func combineHTML(elements ...template.HTML) template.HTML {
-	if len(elements) == 0 {
-		return ""
-	}
-
+// GetCSS returns all CSS from all components
+func (u *Universe) GetCSS() template.CSS {
 	var builder strings.Builder
-	for _, el := range elements {
-		builder.WriteString(string(el))
-	}
-	return template.HTML(builder.String())
-}
 
-// buildCSS efficiently builds CSS from a selector-to-rules map.
-func buildCSS(styles map[string]string) template.CSS {
-	if len(styles) == 0 {
-		return ""
-	}
-
-	var builder strings.Builder
-	for selector, rules := range styles {
-		builder.WriteString(selector)
-		builder.WriteString(" { ")
-		builder.WriteString(rules)
-		builder.WriteString(" }\n")
+	for _, component := range u.Components {
+		if component.CSS != "" {
+			builder.WriteString(string(component.CSS))
+			builder.WriteString("\n")
+		}
 	}
 	return template.CSS(builder.String())
 }
 
-// CSS is an option to add CSS to a Component.
-func CSS(styles map[string]string) ComponentOption {
-	return func(c *Component) {
-		c.CSS = buildCSS(styles)
-	}
-}
+// GetJS returns all JavaScript from all components
+func (u *Universe) GetJS() template.JS {
+	var builder strings.Builder
 
-// JS is an option to add JS to a Component.
-func JS(js template.JS) ComponentOption {
-	return func(c *Component) {
-		c.JS = js
+	for _, component := range u.Components {
+		if component.JS != "" {
+			builder.WriteString(string(component.JS))
+			builder.WriteString("\n")
+		}
 	}
+
+	return template.JS(builder.String())
 }

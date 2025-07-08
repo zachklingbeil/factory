@@ -6,22 +6,6 @@ import (
 	"html/template"
 )
 
-type Element struct {
-	text
-	media
-	other
-	format
-}
-
-func NewElement() *Element {
-	return &Element{
-		text:   text{},
-		media:  media{},
-		other:  other{},
-		format: format{},
-	}
-}
-
 // --- Generic tag builders ---
 func Tag(tag, text string) template.HTML {
 	escaped := html.EscapeString(text)
@@ -35,20 +19,18 @@ func ClosedTag(tag string, attrs map[string]string) template.HTML {
 	return template.HTML(fmt.Sprintf("<%s%s>", tag, attrStr))
 }
 
-type text struct{}
-
-func (t *text) H1(s string) template.HTML        { return Tag("h1", s) }
-func (t *text) H2(s string) template.HTML        { return Tag("h2", s) }
-func (t *text) H3(s string) template.HTML        { return Tag("h3", s) }
-func (t *text) H4(s string) template.HTML        { return Tag("h4", s) }
-func (t *text) H5(s string) template.HTML        { return Tag("h5", s) }
-func (t *text) H6(s string) template.HTML        { return Tag("h6", s) }
-func (t *text) Paragraph(s string) template.HTML { return Tag("p", s) }
-func (t *text) Span(s string) template.HTML      { return Tag("span", s) }
-func (t *text) Link(href, text string) template.HTML {
+func H1(s string) template.HTML        { return Tag("h1", s) }
+func H2(s string) template.HTML        { return Tag("h2", s) }
+func H3(s string) template.HTML        { return Tag("h3", s) }
+func H4(s string) template.HTML        { return Tag("h4", s) }
+func H5(s string) template.HTML        { return Tag("h5", s) }
+func H6(s string) template.HTML        { return Tag("h6", s) }
+func Paragraph(s string) template.HTML { return Tag("p", s) }
+func Span(s string) template.HTML      { return Tag("span", s) }
+func Link(href, text string) template.HTML {
 	return template.HTML(fmt.Sprintf(`<a href="%s">%s</a>`, html.EscapeString(href), html.EscapeString(text)))
 }
-func (t *text) List(items []any, ordered bool) template.HTML {
+func List(items []any, ordered bool) template.HTML {
 	tag := "ul"
 	if ordered {
 		tag = "ol"
@@ -60,43 +42,39 @@ func (t *text) List(items []any, ordered bool) template.HTML {
 	return template.HTML(fmt.Sprintf("<%s>%s</%s>", tag, list, tag))
 }
 
-type media struct{}
-
-func (m *media) Img(src, alt, width, height string) template.HTML {
+func Img(src, alt, width, height string) template.HTML {
 	return ClosedTag("img", map[string]string{"src": src, "alt": alt, "width": width, "height": height})
 }
-func (m *media) Video(src string) template.HTML {
+func Video(src string) template.HTML {
 	return template.HTML(fmt.Sprintf(`<video controls src="%s"></video>`, html.EscapeString(src)))
 }
-func (m *media) Audio(src string) template.HTML {
+func Audio(src string) template.HTML {
 	return template.HTML(fmt.Sprintf(`<audio controls src="%s"></audio>`, html.EscapeString(src)))
 }
-func (m *media) Iframe(src string) template.HTML {
+func Iframe(src string) template.HTML {
 	return template.HTML(fmt.Sprintf(`<iframe src="%s"></iframe>`, html.EscapeString(src)))
 }
-func (m *media) Embed(src string) template.HTML {
+func Embed(src string) template.HTML {
 	return ClosedTag("embed", map[string]string{"src": src})
 }
-func (m *media) Source(src string) template.HTML {
+func Source(src string) template.HTML {
 	return ClosedTag("source", map[string]string{"src": src})
 }
-func (m *media) Canvas(id string) template.HTML {
+func Canvas(id string) template.HTML {
 	return template.HTML(fmt.Sprintf(`<canvas id="%s"></canvas>`, html.EscapeString(id)))
 }
 
-type other struct{}
-
-func (o *other) Nav(attrs map[string]string) template.HTML {
+func Nav(attrs map[string]string) template.HTML {
 	return ClosedTag("nav", attrs)
 }
 
-func (o *other) Button(label string) template.HTML {
+func Button(label string) template.HTML {
 	return Tag("button", label)
 }
-func (o *other) Code(code string) template.HTML {
+func Code(code string) template.HTML {
 	return Tag("code", code)
 }
-func (o *other) Table(cols uint8, rows uint64, data [][]string) template.HTML {
+func Table(cols uint8, rows uint64, data [][]string) template.HTML {
 	table := "<table>"
 	for _, row := range data {
 		table += "<tr>"
@@ -109,18 +87,16 @@ func (o *other) Table(cols uint8, rows uint64, data [][]string) template.HTML {
 	return template.HTML(table)
 }
 
-type format struct{}
-
-func (f *format) Strong(s string) template.HTML { return Tag("strong", s) }
-func (f *format) Em(s string) template.HTML     { return Tag("em", s) }
-func (f *format) Small(s string) template.HTML  { return Tag("small", s) }
-func (f *format) Mark(s string) template.HTML   { return Tag("mark", s) }
-func (f *format) Del(s string) template.HTML    { return Tag("del", s) }
-func (f *format) Ins(s string) template.HTML    { return Tag("ins", s) }
-func (f *format) Sub(s string) template.HTML    { return Tag("sub", s) }
-func (f *format) Sup(s string) template.HTML    { return Tag("sup", s) }
-func (f *format) Kbd(s string) template.HTML    { return Tag("kbd", s) }
-func (f *format) Samp(s string) template.HTML   { return Tag("samp", s) }
-func (f *format) Var(s string) template.HTML    { return Tag("var", s) }
-func (f *format) Abbr(s string) template.HTML   { return Tag("abbr", s) }
-func (f *format) Time(s string) template.HTML   { return Tag("time", s) }
+func Strong(s string) template.HTML { return Tag("strong", s) }
+func Em(s string) template.HTML     { return Tag("em", s) }
+func Small(s string) template.HTML  { return Tag("small", s) }
+func Mark(s string) template.HTML   { return Tag("mark", s) }
+func Del(s string) template.HTML    { return Tag("del", s) }
+func Ins(s string) template.HTML    { return Tag("ins", s) }
+func Sub(s string) template.HTML    { return Tag("sub", s) }
+func Sup(s string) template.HTML    { return Tag("sup", s) }
+func Kbd(s string) template.HTML    { return Tag("kbd", s) }
+func Samp(s string) template.HTML   { return Tag("samp", s) }
+func Var(s string) template.HTML    { return Tag("var", s) }
+func Abbr(s string) template.HTML   { return Tag("abbr", s) }
+func Time(s string) template.HTML   { return Tag("time", s) }

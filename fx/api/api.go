@@ -1,4 +1,4 @@
-package path
+package api
 
 import (
 	"context"
@@ -9,20 +9,21 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
 type API struct {
 	Endpoints map[string]any
 	Router    *mux.Router
-	Ctx       context.Context
+	ctx       context.Context
 }
 
 func NewAPI(ctx context.Context) *API {
 	api := &API{
 		Router:    mux.NewRouter().StrictSlash(true),
 		Endpoints: make(map[string]any),
-		Ctx:       ctx,
+		ctx:       ctx,
 	}
 
 	api.Router.Use(api.corsMiddleware())
@@ -100,4 +101,12 @@ func (a *API) handleRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.ServeFile(w, r, filePath)
+}
+
+func (a *API) corsMiddleware() mux.MiddlewareFunc {
+	return handlers.CORS(
+		handlers.AllowedHeaders([]string{"X-Requested-With", "X-API-KEY", "Content-Type", "Peer", "Cache-Control", "Connection"}),
+		handlers.AllowedOrigins([]string{"*"}),
+		handlers.AllowedMethods([]string{"GET"}),
+	)
 }

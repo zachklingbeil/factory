@@ -14,8 +14,8 @@ import (
 var index embed.FS
 
 type Pathless struct {
-	Router *mux.Router
-	Zero   *template.Template
+	router *mux.Router
+	zero   *template.Template
 }
 
 func NewPathless() *Pathless {
@@ -25,25 +25,25 @@ func NewPathless() *Pathless {
 	}
 
 	p := &Pathless{
-		Router: mux.NewRouter().StrictSlash(true),
-		Zero:   one,
+		router: mux.NewRouter().StrictSlash(true),
+		zero:   one,
 	}
 
-	p.Router.Use(handlers.CORS(
+	p.router.Use(handlers.CORS(
 		handlers.AllowedHeaders([]string{"X-Requested-With", "X-API-KEY", "Content-Type", "Peer", "Cache-Control", "Connection"}),
 		handlers.AllowedOrigins([]string{"*"}),
 		handlers.AllowedMethods([]string{"GET"}),
 	))
-	p.Router.HandleFunc("/", p.ServeIndex)
+	p.router.HandleFunc("/", p.serve)
 	go func() {
-		log.Fatal(http.ListenAndServe(":10001", p.Router))
+		log.Fatal(http.ListenAndServe(":10001", p.router))
 	}()
 	return p
 }
 
-func (p *Pathless) ServeIndex(w http.ResponseWriter, r *http.Request) {
+func (p *Pathless) serve(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := p.Zero.Execute(w, nil); err != nil {
+	if err := p.zero.Execute(w, nil); err != nil {
 		http.Error(w, "failed to render index.html", http.StatusInternalServerError)
 	}
 }

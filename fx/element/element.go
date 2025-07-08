@@ -1,4 +1,4 @@
-package universe
+package element
 
 import (
 	"fmt"
@@ -16,9 +16,10 @@ type Element struct {
 type Component struct {
 	HTML template.HTML `json:"html"`
 	CSS  template.CSS  `json:"css"`
+	JS   template.JS   `json:"js,omitempty"`
 }
 
-func NewElements() *Element {
+func NewElement() *Element {
 	return &Element{
 		text:   text{},
 		media:  media{},

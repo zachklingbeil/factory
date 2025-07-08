@@ -13,30 +13,35 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
-	"github.com/zachklingbeil/factory/fx/path"
+	"github.com/zachklingbeil/factory/fx/api"
+	"github.com/zachklingbeil/factory/fx/element"
+	"github.com/zachklingbeil/factory/fx/json"
+
 	"github.com/zachklingbeil/factory/fx/pathless"
-	"github.com/zachklingbeil/factory/fx/universe"
 	"golang.org/x/oauth2/clientcredentials"
 )
 
 type Fx struct {
-	Api      *path.API
-	pathless *pathless.Pathless
-	universe *universe.Universe
-	Ctx      context.Context
+	*api.API
+	*pathless.Pathless
+	*element.Element
+	ctx  context.Context
+	Json *json.Json
 }
 
 func NewFx(ctx context.Context) *Fx {
 	return &Fx{
-		Api:      path.NewAPI(ctx),
-		pathless: pathless.NewPathless(),
-		Ctx:      ctx,
+		API:      api.NewAPI(ctx),
+		Pathless: pathless.NewPathless(),
+		Element:  element.NewElement(),
+		Json:     json.NewJson(ctx),
+		ctx:      ctx,
 	}
 }
 
 // Establish geth.ipc connection
 func (f *Fx) Node() (*rpc.Client, *ethclient.Client) {
-	rpc, err := rpc.DialIPC(f.Ctx, "/ethereum/geth.ipc") // Updated path
+	rpc, err := rpc.DialIPC(f.ctx, "/ethereum/geth.ipc") // Updated path
 	if err != nil {
 		log.Printf("Failed to connect to the Ethereum client: %v", err)
 		return nil, nil
@@ -49,7 +54,7 @@ func (f *Fx) Node() (*rpc.Client, *ethclient.Client) {
 // Establish geth.ws connection using API key from environment variable
 func (f *Fx) NodeWS(wsURL string) (*rpc.Client, *ethclient.Client, error) {
 	fullURL := fmt.Sprintf("%s/%s", wsURL, os.Getenv("ETH_API_KEY"))
-	rpcClient, err := rpc.DialContext(f.Ctx, fullURL)
+	rpcClient, err := rpc.DialContext(f.ctx, fullURL)
 	if err != nil {
 		log.Printf("Failed to connect to Ethereum WebSocket: %v", err)
 		return nil, nil, err
@@ -77,7 +82,7 @@ func (f *Fx) ConnectRedis(dbNumber int, password string) (*redis.Client, error) 
 		DB:       dbNumber,
 	})
 
-	if _, err := client.Ping(f.Ctx).Result(); err != nil {
+	if _, err := client.Ping(f.ctx).Result(); err != nil {
 		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
 	}
 
@@ -105,7 +110,7 @@ func (f *Fx) ConnectPostgres(dbName string) (*sql.DB, error) {
 
 // NewOAuthClient returns an authenticated HTTP client (machine-to-machine, no user interaction)
 func (f *Fx) NewOAuthClient(clientID, clientSecret, tokenURL string, scopes []string) (*http.Client, error) {
-	ctx, cancel := context.WithTimeout(f.Ctx, 2*time.Minute)
+	ctx, cancel := context.WithTimeout(f.ctx, 2*time.Minute)
 	defer cancel()
 
 	clientConfig := &clientcredentials.Config{

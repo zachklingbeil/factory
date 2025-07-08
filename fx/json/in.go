@@ -9,23 +9,23 @@ import (
 )
 
 type Json struct {
-	HTTP *http.Client
-	Ctx  context.Context
+	Http *http.Client
+	ctx  context.Context
 }
 
-// NewJson creates a new Json instance with a default HTTP client and context
+// NewJson creates a new Json instance with a default Http client and context
 func NewJson(ctx context.Context) *Json {
 	return &Json{
-		HTTP: &http.Client{},
-		Ctx:  ctx,
+		Http: &http.Client{},
+		ctx:  ctx,
 	}
 }
 
 // GetOption represents a function that modifies a GET request
 type GetOption func(*http.Request)
 
-// Get executes HTTP GET requests with the given URL and options
-func (j *Json) Get(endpoint string, options ...GetOption) ([]byte, error) {
+// Get executes Http GET requests with the given URL and options
+func (j *Json) In(endpoint string, options ...GetOption) ([]byte, error) {
 	req, err := j.createRequest(endpoint)
 	if err != nil {
 		return nil, err
@@ -37,14 +37,14 @@ func (j *Json) Get(endpoint string, options ...GetOption) ([]byte, error) {
 	return j.executeRequest(req)
 }
 
-// createRequest creates and configures the base HTTP GET request
+// createRequest creates and configures the base Http GET request
 func (j *Json) createRequest(endpoint string) (*http.Request, error) {
 	parsedURL, err := url.Parse(endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse URL %s: %w", endpoint, err)
 	}
 
-	req, err := http.NewRequestWithContext(j.Ctx, "GET", parsedURL.String(), nil)
+	req, err := http.NewRequestWithContext(j.ctx, "GET", parsedURL.String(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GET request for URL %s: %w", parsedURL.String(), err)
 	}
@@ -52,9 +52,9 @@ func (j *Json) createRequest(endpoint string) (*http.Request, error) {
 	return req, nil
 }
 
-// executeRequest executes the HTTP request and returns the response body
+// executeRequest executes the Http request and returns the response body
 func (j *Json) executeRequest(req *http.Request) ([]byte, error) {
-	resp, err := j.HTTP.Do(req)
+	resp, err := j.Http.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute GET request: %w", err)
 	}

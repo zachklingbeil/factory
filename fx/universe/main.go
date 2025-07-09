@@ -6,56 +6,74 @@ import (
 )
 
 type Universe struct {
-	Element
-	Components map[string]*Component
+	Frame map[string]*template.HTML
 }
 
 func NewUniverse() *Universe {
 	return &Universe{
-		Components: make(map[string]*Component),
+		Frame: make(map[string]*template.HTML),
 	}
 }
 
-// Add adds a component to the universe with a key
-func (u *Universe) Add(key string, component *Component) *Universe {
-	u.Components[key] = component
-	return u
-}
-
-// Render renders the entire universe as HTML
-func (u *Universe) Render() template.HTML {
-	var content strings.Builder
-
-	for _, component := range u.Components {
-		content.WriteString(string(component.Render()))
-	}
-
-	return template.HTML(content.String())
-}
-
-// GetCSS returns all CSS from all components
-func (u *Universe) GetCSS() template.CSS {
+func (u *Universe) CreateFrame(name string, elements ...template.HTML) {
 	var builder strings.Builder
-
-	for _, component := range u.Components {
-		if component.CSS != "" {
-			builder.WriteString(string(component.CSS))
-			builder.WriteString("\n")
-		}
+	for _, element := range elements {
+		builder.WriteString(string(element))
 	}
-	return template.CSS(builder.String())
+	html := template.HTML(builder.String())
+	u.Frame[name] = &html
 }
 
-// GetJS returns all JavaScript from all components
-func (u *Universe) GetJS() template.JS {
-	var builder strings.Builder
+func (u *Universe) AddCSS(pageName string, styles map[string]string) {
+	if page, exists := u.Frame[pageName]; exists {
+		var builder strings.Builder
 
-	for _, component := range u.Components {
-		if component.JS != "" {
-			builder.WriteString(string(component.JS))
-			builder.WriteString("\n")
+		// Start with existing HTML
+		builder.WriteString(string(*page))
+		builder.WriteString("<style>")
+		for selector, rules := range styles {
+			builder.WriteString(selector)
+			builder.WriteString(" { ")
+			builder.WriteString(rules)
+			builder.WriteString(" }\n")
 		}
-	}
+		builder.WriteString("</style>")
 
-	return template.JS(builder.String())
+		html := template.HTML(builder.String())
+		u.Frame[pageName] = &html
+	}
+}
+
+// Step 2: Add JS to existing page
+func (u *Universe) AddJS(pageName string, js string) {
+	if page, exists := u.Frame[pageName]; exists {
+		var builder strings.Builder
+		// Start with existing HTML
+		builder.WriteString(string(*page))
+		builder.WriteString("<script>")
+		builder.WriteString(js)
+		builder.WriteString("</script>")
+
+		html := template.HTML(builder.String())
+		u.Frame[pageName] = &html
+	}
+}
+
+func (u *Universe) Render(pageName string) template.HTML {
+	if page, exists := u.Frame[pageName]; exists {
+		return *page
+	}
+	return template.HTML("")
+}
+
+func (u *Universe) ListPages() []string {
+	pages := make([]string, 0, len(u.Frame))
+	for name := range u.Frame {
+		pages = append(pages, name)
+	}
+	return pages
+}
+
+func (u *Universe) DeletePage(pageName string) {
+	delete(u.Frame, pageName)
 }

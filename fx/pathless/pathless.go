@@ -14,8 +14,11 @@ import (
 var index embed.FS
 
 type Pathless struct {
-	router *mux.Router
-	zero   *template.Template
+	Favicon string
+	Title   string
+	router  *mux.Router
+	zero    *template.Template
+	Body    template.HTML
 }
 
 func NewPathless() *Pathless {

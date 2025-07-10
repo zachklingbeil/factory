@@ -9,45 +9,124 @@ import (
 	"strings"
 )
 
+// Compiled regex patterns for better performance
+var (
+	bold   = regexp.MustCompile(`\*\*(.*?)\*\*|__(.*?)__`)
+	italic = regexp.MustCompile(`(?:\*([^*]+)\*|_([^_]+)_)`)
+	code   = regexp.MustCompile("`([^`]+)`")
+	link   = regexp.MustCompile(`\[([^\]]+)\]\(([^)]+)\)`)
+	img    = regexp.MustCompile(`!\[([^\]]*)\]\(([^)]+)(?:\s+"([^"]*)")?\)`)
+)
+
 // MarkdownToHTML converts markdown text to HTML using existing methods
 func MarkdownToHTML(markdown string) template.HTML {
-	var elements []template.HTML
+	if markdown == "" {
+		return template.HTML("")
+	}
+
 	lines := strings.Split(markdown, "\n")
+	elements := make([]template.HTML, 0, len(lines))
 
 	for i := 0; i < len(lines); i++ {
 		line := strings.TrimSpace(lines[i])
 
+		if line == "" {
+			continue
+		}
+
 		switch {
-		case strings.HasPrefix(line, "# "):
-			elements = append(elements, H1(strings.TrimPrefix(line, "# ")))
-		case strings.HasPrefix(line, "## "):
-			elements = append(elements, H2(strings.TrimPrefix(line, "## ")))
-		case strings.HasPrefix(line, "### "):
-			elements = append(elements, H3(strings.TrimPrefix(line, "### ")))
-		case strings.HasPrefix(line, "#### "):
-			elements = append(elements, H4(strings.TrimPrefix(line, "#### ")))
-		case strings.HasPrefix(line, "##### "):
-			elements = append(elements, H5(strings.TrimPrefix(line, "##### ")))
-		case strings.HasPrefix(line, "###### "):
-			elements = append(elements, H6(strings.TrimPrefix(line, "###### ")))
+		case strings.HasPrefix(line, "######"):
+			elements = append(elements, H6(strings.TrimSpace(line[6:])))
+		case strings.HasPrefix(line, "#####"):
+			elements = append(elements, H5(strings.TrimSpace(line[5:])))
+		case strings.HasPrefix(line, "####"):
+			elements = append(elements, H4(strings.TrimSpace(line[4:])))
+		case strings.HasPrefix(line, "###"):
+			elements = append(elements, H3(strings.TrimSpace(line[3:])))
+		case strings.HasPrefix(line, "##"):
+			elements = append(elements, H2(strings.TrimSpace(line[2:])))
+		case strings.HasPrefix(line, "#"):
+			elements = append(elements, H1(strings.TrimSpace(line[1:])))
 		case strings.HasPrefix(line, "- ") || strings.HasPrefix(line, "* "):
-			// Handle lists (simplified)
-			listItems := []any{}
-			for i < len(lines) && (strings.HasPrefix(strings.TrimSpace(lines[i]), "- ") || strings.HasPrefix(strings.TrimSpace(lines[i]), "* ")) {
-				item := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(lines[i], "- "), "* "))
-				listItems = append(listItems, item)
-				i++
-			}
-			i-- // Back up one since the loop will increment
+			listItems, newIndex := parseList(lines, i)
 			elements = append(elements, List(listItems, false))
-		case line != "":
-			// Regular paragraph with inline formatting
+			i = newIndex
+		default:
 			formatted := processInlineFormatting(line)
-			elements = append(elements, template.HTML("<p>"+formatted+"</p>"))
+			elements = append(elements, Paragraph(formatted))
 		}
 	}
 
-	// Combine all elements
+	return combineElements(elements)
+}
+
+// parseList extracts list items starting from the given index
+func parseList(lines []string, startIndex int) ([]any, int) {
+	listItems := make([]any, 0, 10)
+	i := startIndex
+
+	for i < len(lines) {
+		line := strings.TrimSpace(lines[i])
+		if !strings.HasPrefix(line, "- ") && !strings.HasPrefix(line, "* ") {
+			break
+		}
+
+		// Remove list marker and process inline formatting
+		item := strings.TrimSpace(line[2:])
+		listItems = append(listItems, processInlineFormatting(item))
+		i++
+	}
+
+	return listItems, i - 1
+}
+
+// processInlineFormatting applies inline markdown formatting
+func processInlineFormatting(text string) string {
+	// Images
+	text = img.ReplaceAllStringFunc(text, func(match string) string {
+		matches := img.FindStringSubmatch(match)
+		if len(matches) >= 3 {
+			return string(Img(matches[2], matches[1], "", ""))
+		}
+		return match
+	})
+
+	// Links
+	text = link.ReplaceAllStringFunc(text, func(match string) string {
+		matches := link.FindStringSubmatch(match)
+		if len(matches) == 3 {
+			return string(Link(matches[2], matches[1]))
+		}
+		return match
+	})
+
+	// Bold
+	text = bold.ReplaceAllStringFunc(text, func(match string) string {
+		content := match[2 : len(match)-2]
+		return string(Strong(content))
+	})
+
+	// Italic
+	text = italic.ReplaceAllStringFunc(text, func(match string) string {
+		content := match[1 : len(match)-1]
+		return string(Em(content))
+	})
+
+	// Code
+	text = code.ReplaceAllStringFunc(text, func(match string) string {
+		content := match[1 : len(match)-1]
+		return string(Code(content))
+	})
+
+	return text
+}
+
+// combineElements efficiently combines HTML elements
+func combineElements(elements []template.HTML) template.HTML {
+	if len(elements) == 0 {
+		return template.HTML("")
+	}
+
 	var result strings.Builder
 	for _, element := range elements {
 		result.WriteString(string(element))
@@ -56,76 +135,25 @@ func MarkdownToHTML(markdown string) template.HTML {
 	return template.HTML(result.String())
 }
 
-// Process inline formatting like **bold**, *italic*, `code`, etc.
-func processInlineFormatting(text string) string {
-	// Bold: **text** or __text__
-	boldRegex := regexp.MustCompile(`\*\*(.*?)\*\*|__(.*?)__`)
-	text = boldRegex.ReplaceAllStringFunc(text, func(match string) string {
-		content := strings.Trim(strings.Trim(match, "*"), "_")
-		return string(Strong(content))
-	})
-
-	// Italic: *text* or _text_
-	italicRegex := regexp.MustCompile(`\*(.*?)\*|_(.*?)_`)
-	text = italicRegex.ReplaceAllStringFunc(text, func(match string) string {
-		content := strings.Trim(strings.Trim(match, "*"), "_")
-		return string(Em(content))
-	})
-
-	// Inline code: `text`
-	codeRegex := regexp.MustCompile("`(.*?)`")
-	text = codeRegex.ReplaceAllStringFunc(text, func(match string) string {
-		content := strings.Trim(match, "`")
-		return string(Code(content))
-	})
-
-	// Links: [text](url)
-	linkRegex := regexp.MustCompile(`\[([^\]]+)\]\(([^)]+)\)`)
-	text = linkRegex.ReplaceAllStringFunc(text, func(match string) string {
-		matches := linkRegex.FindStringSubmatch(match)
-		if len(matches) == 3 {
-			return string(Link(matches[2], matches[1]))
-		}
-		return match
-	})
-
-	return text
-}
-
-// LoadMarkdownFile reads a markdown file and creates a Universe page
-func (u *Universe) LoadMarkdownFile(pageName, filePath string) error {
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		return err
-	}
-
-	html := MarkdownToHTML(string(content))
-	u.CreateFrame(pageName, html)
-	return nil
-}
-
 // LoadMarkdownDirectory loads all markdown files from a directory
 func (u *Universe) LoadMarkdownDirectory(dirPath string) error {
 	return filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+
+		ext := strings.ToLower(filepath.Ext(d.Name()))
+		if ext != ".md" && ext != ".markdown" {
+			return nil
+		}
+
+		content, err := os.ReadFile(path)
 		if err != nil {
 			return err
 		}
 
-		if !d.IsDir() && strings.HasSuffix(strings.ToLower(d.Name()), ".md") {
-			// Use filename without extension as page name
-			pageName := strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))
-
-			err := u.LoadMarkdownFile(pageName, path)
-			if err != nil {
-				return err
-			}
-		}
-
+		pageName := strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))
+		u.CreateFrame(pageName, MarkdownToHTML(string(content)))
 		return nil
 	})
-}
-
-// LoadMarkdownWithName loads markdown with a custom page name
-func (u *Universe) LoadMarkdownWithName(pageName, filePath string) error {
-	return u.LoadMarkdownFile(pageName, filePath)
 }

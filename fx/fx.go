@@ -13,31 +13,9 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
-	"github.com/zachklingbeil/factory/fx/api"
-	"github.com/zachklingbeil/factory/fx/json"
-	"github.com/zachklingbeil/factory/fx/universe"
 
-	"github.com/zachklingbeil/factory/fx/pathless"
 	"golang.org/x/oauth2/clientcredentials"
 )
-
-type Fx struct {
-	*api.API
-	*pathless.Pathless
-	*universe.Universe
-	ctx  context.Context
-	Json *json.Json
-}
-
-func NewFx(ctx context.Context) *Fx {
-	return &Fx{
-		API:      api.NewAPI(ctx),
-		Pathless: pathless.NewPathless(),
-		Universe: universe.NewUniverse(),
-		Json:     json.NewJson(ctx),
-		ctx:      ctx,
-	}
-}
 
 // Establish geth.ipc connection
 func (f *Fx) Node() (*rpc.Client, *ethclient.Client) {

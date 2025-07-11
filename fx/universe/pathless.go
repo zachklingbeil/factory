@@ -1,4 +1,4 @@
-package pathless
+package universe
 
 import (
 	"html/template"

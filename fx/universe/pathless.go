@@ -2,18 +2,13 @@ package universe
 
 import (
 	"html/template"
-	"log"
 	"net/http"
-
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
 )
 
 type Pathless struct {
 	Config *Config
 	HTML   template.HTML
 	Body   template.HTML
-	router *mux.Router
 }
 
 type Config struct {
@@ -26,7 +21,6 @@ type Config struct {
 
 func NewPathless(favicon, title, font, primary, secondary string) *Pathless {
 	p := &Pathless{
-		router: mux.NewRouter().StrictSlash(true),
 		Config: &Config{
 			Favicon:   favicon,
 			Title:     title,
@@ -35,24 +29,12 @@ func NewPathless(favicon, title, font, primary, secondary string) *Pathless {
 			Secondary: secondary,
 		},
 	}
-
-	// Finalize the template with {{.Body}} placeholder
 	p.HTML = p.baseTemplate()
 	p.Body = template.HTML("")
-
-	p.router.Use(handlers.CORS(
-		handlers.AllowedHeaders([]string{"X-Requested-With", "X-API-KEY", "Content-Type", "Peer", "Cache-Control", "Connection"}),
-		handlers.AllowedOrigins([]string{"*"}),
-		handlers.AllowedMethods([]string{"GET"}),
-	))
-	p.router.HandleFunc("/", p.serve)
-	go func() {
-		log.Fatal(http.ListenAndServe(":10001", p.router))
-	}()
 	return p
 }
 
-func (p *Pathless) serve(w http.ResponseWriter, r *http.Request) {
+func (p *Pathless) Serve(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write([]byte(p.HTML))
 }

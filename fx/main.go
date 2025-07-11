@@ -4,23 +4,24 @@ import (
 	"context"
 
 	_ "github.com/lib/pq"
-	"github.com/zachklingbeil/factory/fx/api"
-	"github.com/zachklingbeil/factory/fx/json"
-	"github.com/zachklingbeil/factory/fx/universe"
+	"github.com/zachklingbeil/factory/io"
+	"github.com/zachklingbeil/factory/universe"
 )
 
 type Fx struct {
-	*api.API
 	*universe.Universe
 	ctx  context.Context
-	Json *json.Json
+	Json *io.Json
 }
 
 func NewFx(ctx context.Context) *Fx {
 	return &Fx{
-		API:      api.NewAPI(ctx),
-		Universe: universe.NewUniverse(),
-		Json:     json.NewJson(ctx),
+		Universe: universe.NewUniverse(ctx),
+		Json:     io.NewJson(ctx),
 		ctx:      ctx,
 	}
+}
+
+func (f *Fx) NewPathless() *universe.Pathless {
+	return universe.NewPathless("", "")
 }

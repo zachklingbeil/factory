@@ -19,14 +19,14 @@ type Config struct {
 	Secondary string
 }
 
-func NewPathless(favicon, title, font, primary, secondary string) *Pathless {
+func NewPathless(favicon, title string) *Pathless {
 	p := &Pathless{
 		Config: &Config{
 			Favicon:   favicon,
 			Title:     title,
-			Font:      font,
-			Primary:   primary,
-			Secondary: secondary,
+			Font:      "'Roboto', sans-serif",
+			Primary:   "blue",
+			Secondary: "red",
 		},
 	}
 	p.HTML = p.baseTemplate()
@@ -46,20 +46,15 @@ func (p *Pathless) Update(w http.ResponseWriter, r *http.Request, content string
 }
 
 func (p *Pathless) baseTemplate() template.HTML {
-	return template.HTML(`
+	tmpl := `
 <!DOCTYPE html>
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="icon" href="{{.Favicon}}" />
-        <title>{{.Title}}</title>
+        <link rel="icon" href="` + p.Config.Favicon + `" />
+        <title>` + p.Config.Title + `</title>
         <style>
-            :root {
-                --font-family: {{.Font}};
-                --primary: {{.Primary}};
-                --secondary: {{.Secondary}};
-            }
             *,
             *::before,
             *::after {
@@ -82,7 +77,7 @@ func (p *Pathless) baseTemplate() template.HTML {
                 overflow: hidden;
                 height: 100vh;
                 width: 100vw;
-                font-family: var(--font-family);
+                font-family: ` + p.Config.Font + `;
                 scroll-behavior: smooth;
                 box-sizing: border-box;
                 border-radius: 0.3125em;
@@ -90,12 +85,13 @@ func (p *Pathless) baseTemplate() template.HTML {
                 flex-direction: column;
             }
             body {
-                border: medium solid var(--primary);
+                border: medium solid ` + p.Config.Primary + `;
             }
         </style>
     </head>
     <body>
         {{.Body}}
     </body>
-</html>`)
+</html>`
+	return template.HTML(tmpl)
 }

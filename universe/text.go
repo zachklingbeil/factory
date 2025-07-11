@@ -18,6 +18,29 @@ var (
 	img    = regexp.MustCompile(`!\[([^\]]*)\]\(([^)]+)(?:\s+"([^"]*)")?\)`)
 )
 
+// LoadText initializes the Text struct and sets up the router
+func (u *Universe) LoadText(dirPath string) error {
+	return filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+
+		ext := strings.ToLower(filepath.Ext(d.Name()))
+		if ext != ".md" && ext != ".markdown" {
+			return nil
+		}
+
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		pageName := strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))
+		u.CreateFrame(pageName, MarkdownToHTML(string(content)))
+		return nil
+	})
+}
+
 // MarkdownToHTML converts markdown text to HTML using existing methods
 func MarkdownToHTML(markdown string) template.HTML {
 	if markdown == "" {
@@ -133,27 +156,4 @@ func combineElements(elements []template.HTML) template.HTML {
 	}
 
 	return template.HTML(result.String())
-}
-
-// LoadMarkdownDirectory loads all markdown files from a directory
-func (u *Universe) LoadMarkdownDirectory(dirPath string) error {
-	return filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, err error) error {
-		if err != nil || d.IsDir() {
-			return err
-		}
-
-		ext := strings.ToLower(filepath.Ext(d.Name()))
-		if ext != ".md" && ext != ".markdown" {
-			return nil
-		}
-
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-
-		pageName := strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))
-		u.CreateFrame(pageName, MarkdownToHTML(string(content)))
-		return nil
-	})
 }

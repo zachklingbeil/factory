@@ -5,16 +5,6 @@ import (
 	"strings"
 )
 
-type Universe struct {
-	Frame map[string]*template.HTML
-}
-
-func NewUniverse() *Universe {
-	return &Universe{
-		Frame: make(map[string]*template.HTML),
-	}
-}
-
 func (u *Universe) CreateFrame(name string, elements ...template.HTML) {
 	var builder strings.Builder
 	for _, element := range elements {

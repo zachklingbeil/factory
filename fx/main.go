@@ -2,26 +2,25 @@ package fx
 
 import (
 	"context"
+	"html/template"
 
-	_ "github.com/lib/pq"
-	"github.com/zachklingbeil/factory/io"
-	"github.com/zachklingbeil/factory/universe"
+	"github.com/gorilla/mux"
 )
 
-type Fx struct {
-	*universe.Universe
-	ctx  context.Context
-	Json *io.Json
+type Universe struct {
+	Pathless *Pathless
+	Path     map[string]*Value
+	Frame    map[string]*template.HTML
+	Router   *mux.Router
+	Ctx      context.Context
 }
 
-func NewFx(ctx context.Context) *Fx {
-	return &Fx{
-		Universe: universe.NewUniverse(ctx),
-		Json:     io.NewJson(ctx),
-		ctx:      ctx,
+func NewUniverse(ctx context.Context, favicon, title string) *Universe {
+	return &Universe{
+		Frame:    make(map[string]*template.HTML),
+		Path:     make(map[string]*Value),
+		Pathless: NewPathless(favicon, title),
+		Router:   mux.NewRouter().StrictSlash(true),
+		Ctx:      ctx,
 	}
-}
-
-func (f *Fx) NewPathless() *universe.Pathless {
-	return universe.NewPathless("", "")
 }

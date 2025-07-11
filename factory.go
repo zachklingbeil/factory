@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/zachklingbeil/factory/fx"
+	"github.com/zachklingbeil/factory/io"
 )
 
 type Factory struct {
@@ -12,7 +13,8 @@ type Factory struct {
 	Mu   *sync.Mutex
 	Rw   *sync.RWMutex
 	When *sync.Cond
-	*fx.Fx
+	Json *io.Json
+	*fx.Universe
 }
 
 func InitFactory() *Factory {
@@ -25,7 +27,11 @@ func InitFactory() *Factory {
 		Mu:   mu,
 		Rw:   rw,
 		When: when,
-		Fx:   fx.NewFx(ctx),
 	}
 	return factory
+}
+
+func (f *Factory) InitUniverse(favicon, title string) *fx.Universe {
+	fx.NewUniverse(f.Ctx, favicon, title)
+	return f.Universe
 }

@@ -1,4 +1,4 @@
-package fx
+package factory
 
 import (
 	"context"
@@ -18,8 +18,8 @@ import (
 )
 
 // Establish geth.ipc connection
-func (f *Fx) Node() (*rpc.Client, *ethclient.Client) {
-	rpc, err := rpc.DialIPC(f.ctx, "/ethereum/geth.ipc") // Updated path
+func (f *Factory) Node() (*rpc.Client, *ethclient.Client) {
+	rpc, err := rpc.DialIPC(f.Ctx, "/ethereum/geth.ipc") // Updated path
 	if err != nil {
 		log.Printf("Failed to connect to the Ethereum client: %v", err)
 		return nil, nil
@@ -30,9 +30,9 @@ func (f *Fx) Node() (*rpc.Client, *ethclient.Client) {
 }
 
 // Establish geth.ws connection using API key from environment variable
-func (f *Fx) NodeWS(wsURL string) (*rpc.Client, *ethclient.Client, error) {
+func (f *Factory) NodeWS(wsURL string) (*rpc.Client, *ethclient.Client, error) {
 	fullURL := fmt.Sprintf("%s/%s", wsURL, os.Getenv("ETH_API_KEY"))
-	rpcClient, err := rpc.DialContext(f.ctx, fullURL)
+	rpcClient, err := rpc.DialContext(f.Ctx, fullURL)
 	if err != nil {
 		log.Printf("Failed to connect to Ethereum WebSocket: %v", err)
 		return nil, nil, err
@@ -42,7 +42,7 @@ func (f *Fx) NodeWS(wsURL string) (*rpc.Client, *ethclient.Client, error) {
 }
 
 // Establish geth.http connection using API key from environment variable
-func (f *Fx) NodeHTTP(httpURL string) (*rpc.Client, *ethclient.Client, error) {
+func (f *Factory) NodeHTTP(httpURL string) (*rpc.Client, *ethclient.Client, error) {
 	fullURL := fmt.Sprintf("%s/%s", httpURL, os.Getenv("ETH_API_KEY"))
 	rpcClient, err := rpc.DialHTTP(fullURL)
 	if err != nil {
@@ -53,21 +53,21 @@ func (f *Fx) NodeHTTP(httpURL string) (*rpc.Client, *ethclient.Client, error) {
 	return rpcClient, eth, nil
 }
 
-func (f *Fx) ConnectRedis(dbNumber int, password string) (*redis.Client, error) {
+func (f *Factory) ConnectRedis(dbNumber int, password string) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     "redis:6379",
 		Password: password,
 		DB:       dbNumber,
 	})
 
-	if _, err := client.Ping(f.ctx).Result(); err != nil {
+	if _, err := client.Ping(f.Ctx).Result(); err != nil {
 		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
 	}
 
 	return client, nil
 }
 
-func (f *Fx) ConnectPostgres(dbName string) (*sql.DB, error) {
+func (f *Factory) ConnectPostgres(dbName string) (*sql.DB, error) {
 	connStr := fmt.Sprintf("user=postgres password=postgres dbname=%s host=postgres port=5432 sslmode=disable", dbName)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
@@ -87,8 +87,8 @@ func (f *Fx) ConnectPostgres(dbName string) (*sql.DB, error) {
 }
 
 // NewOAuthClient returns an authenticated HTTP client (machine-to-machine, no user interaction)
-func (f *Fx) NewOAuthClient(clientID, clientSecret, tokenURL string, scopes []string) (*http.Client, error) {
-	ctx, cancel := context.WithTimeout(f.ctx, 2*time.Minute)
+func (f *Factory) NewOAuthClient(clientID, clientSecret, tokenURL string, scopes []string) (*http.Client, error) {
+	ctx, cancel := context.WithTimeout(f.Ctx, 2*time.Minute)
 	defer cancel()
 
 	clientConfig := &clientcredentials.Config{

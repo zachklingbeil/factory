@@ -1,4 +1,4 @@
-package universe
+package fx
 
 import (
 	"html/template"

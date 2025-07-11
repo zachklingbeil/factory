@@ -19,8 +19,8 @@ type Config struct {
 	Secondary string
 }
 
-func NewPathless(favicon, title string) *Pathless {
-	p := &Pathless{
+func (u *Universe) NewPathless(favicon, title string) *Pathless {
+	u.Pathless = &Pathless{
 		Config: &Config{
 			Favicon:   favicon,
 			Title:     title,
@@ -29,9 +29,9 @@ func NewPathless(favicon, title string) *Pathless {
 			Secondary: "red",
 		},
 	}
-	p.HTML = p.baseTemplate()
-	p.Body = template.HTML("")
-	return p
+	u.Pathless.HTML = u.Pathless.baseTemplate()
+	u.Pathless.Body = template.HTML("")
+	return u.Pathless
 }
 
 func (p *Pathless) Serve(w http.ResponseWriter, r *http.Request) {

@@ -17,10 +17,9 @@ type Universe struct {
 
 func NewUniverse(ctx context.Context, favicon, title string) *Universe {
 	return &Universe{
-		Frame:    make(map[string]*template.HTML),
-		Path:     make(map[string]*Value),
-		Pathless: NewPathless(favicon, title),
-		Router:   mux.NewRouter().StrictSlash(true),
-		Ctx:      ctx,
+		Frame:  make(map[string]*template.HTML),
+		Path:   make(map[string]*Value),
+		Router: mux.NewRouter().StrictSlash(true),
+		Ctx:    ctx,
 	}
 }

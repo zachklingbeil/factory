@@ -18,6 +18,7 @@ type Value struct {
 }
 
 func (u *Universe) NewPath(path string) error {
+	u.Path = make(map[string]*Value)
 	u.LoadEndpoints(path)
 	u.Router.Use(corsMiddleware())
 	u.Router.HandleFunc("/{key}", u.handlePath).Methods("GET")

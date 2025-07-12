@@ -17,18 +17,6 @@ type Value struct {
 	MimeType string
 }
 
-func (u *Universe) NewPath(path string) error {
-	u.Path = make(map[string]*Value)
-	u.LoadEndpoints(path)
-	u.Router.Use(corsMiddleware())
-	u.Router.HandleFunc("/{key}", u.handlePath).Methods("GET")
-	u.Router.HandleFunc("/{key}/{value}", u.handlePath).Methods("GET")
-	go func() {
-		log.Fatal(http.ListenAndServe(":10002", u.Router))
-	}()
-	return nil
-}
-
 // LoadEndpoints scans path for all directories (keys) and their files (values)
 func (u *Universe) LoadEndpoints(path string) {
 	entries, err := os.ReadDir(path)

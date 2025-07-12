@@ -30,8 +30,3 @@ func InitFactory() *Factory {
 	}
 	return factory
 }
-
-func (f *Factory) InitUniverse(favicon, title string) *fx.Universe {
-	fx.NewUniverse(f.Ctx, favicon, title)
-	return f.Universe
-}

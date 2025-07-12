@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -30,8 +29,8 @@ func (f *Factory) Node() (*rpc.Client, *ethclient.Client) {
 }
 
 // Establish geth.ws connection using API key from environment variable
-func (f *Factory) NodeWS(wsURL string) (*rpc.Client, *ethclient.Client, error) {
-	fullURL := fmt.Sprintf("%s/%s", wsURL, os.Getenv("ETH_API_KEY"))
+func (f *Factory) NodeWS(wsURL, apikey string) (*rpc.Client, *ethclient.Client, error) {
+	fullURL := fmt.Sprintf("%s/%s", wsURL, apikey)
 	rpcClient, err := rpc.DialContext(f.Ctx, fullURL)
 	if err != nil {
 		log.Printf("Failed to connect to Ethereum WebSocket: %v", err)
@@ -42,8 +41,8 @@ func (f *Factory) NodeWS(wsURL string) (*rpc.Client, *ethclient.Client, error) {
 }
 
 // Establish geth.http connection using API key from environment variable
-func (f *Factory) NodeHTTP(httpURL string) (*rpc.Client, *ethclient.Client, error) {
-	fullURL := fmt.Sprintf("%s/%s", httpURL, os.Getenv("ETH_API_KEY"))
+func (f *Factory) NodeHTTP(httpURL, apikey string) (*rpc.Client, *ethclient.Client, error) {
+	fullURL := fmt.Sprintf("%s/%s", httpURL, apikey)
 	rpcClient, err := rpc.DialHTTP(fullURL)
 	if err != nil {
 		log.Printf("Failed to connect to Ethereum HTTP: %v", err)
@@ -91,7 +90,7 @@ func (f *Factory) NewOAuthClient(clientID, clientSecret, tokenURL string, scopes
 	ctx, cancel := context.WithTimeout(f.Ctx, 2*time.Minute)
 	defer cancel()
 
-	clientConfig := &clientcredentials.Config{
+	config := &clientcredentials.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		TokenURL:     tokenURL,
@@ -99,13 +98,13 @@ func (f *Factory) NewOAuthClient(clientID, clientSecret, tokenURL string, scopes
 	}
 
 	// Get token and create HTTP client
-	client := clientConfig.Client(ctx)
+	client := config.Client(ctx)
 	if client == nil {
 		return nil, fmt.Errorf("failed to create OAuth client")
 	}
 
 	// Test the client by making a token request to validate credentials
-	token, err := clientConfig.Token(ctx)
+	token, err := config.Token(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("OAuth client credentials flow failed: %w", err)
 	}

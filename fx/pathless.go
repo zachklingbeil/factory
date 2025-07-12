@@ -2,7 +2,6 @@ package fx
 
 import (
 	"html/template"
-	"net/http"
 )
 
 type Pathless struct {
@@ -17,32 +16,6 @@ type Config struct {
 	Font      string
 	Primary   string
 	Secondary string
-}
-
-func (u *Universe) NewPathless(favicon, title string) *Pathless {
-	u.Pathless = &Pathless{
-		Config: &Config{
-			Favicon:   favicon,
-			Title:     title,
-			Font:      "'Roboto', sans-serif",
-			Primary:   "blue",
-			Secondary: "red",
-		},
-	}
-	u.Pathless.HTML = u.Pathless.baseTemplate()
-	u.Pathless.Body = template.HTML("")
-	return u.Pathless
-}
-
-func (p *Pathless) Serve(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(p.HTML))
-}
-
-func (p *Pathless) Update(w http.ResponseWriter, r *http.Request, content string) {
-	p.Body = template.HTML(content)
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(p.Body))
 }
 
 func (p *Pathless) baseTemplate() template.HTML {

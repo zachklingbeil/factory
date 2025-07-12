@@ -5,17 +5,13 @@ import (
 )
 
 type Pathless struct {
-	Config *Config
-	HTML   template.HTML
-	Body   template.HTML
-}
-
-type Config struct {
 	Favicon   string
 	Title     string
 	Font      string
 	Primary   string
 	Secondary string
+	HTML      template.HTML
+	Body      template.HTML
 }
 
 func (p *Pathless) baseTemplate() template.HTML {
@@ -25,8 +21,8 @@ func (p *Pathless) baseTemplate() template.HTML {
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="icon" href="` + p.Config.Favicon + `" />
-        <title>` + p.Config.Title + `</title>
+        <link rel="icon" href="` + p.Favicon + `" />
+        <title>` + p.Title + `</title>
         <style>
             *,
             *::before,
@@ -50,7 +46,7 @@ func (p *Pathless) baseTemplate() template.HTML {
                 overflow: hidden;
                 height: 100vh;
                 width: 100vw;
-                font-family: ` + p.Config.Font + `;
+                font-family: ` + p.Font + `;
                 scroll-behavior: smooth;
                 box-sizing: border-box;
                 border-radius: 0.3125em;
@@ -58,7 +54,7 @@ func (p *Pathless) baseTemplate() template.HTML {
                 flex-direction: column;
             }
             body {
-                border: medium solid ` + p.Config.Primary + `;
+                border: medium solid ` + p.Primary + `;
             }
         </style>
     </head>

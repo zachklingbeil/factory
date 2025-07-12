@@ -28,14 +28,13 @@ func NewUniverse(ctx context.Context) *Universe {
 
 func (u *Universe) Circuit(favicon, title, path string) error {
 	u.Pathless = &Pathless{
-		Config: &Config{
-			Favicon:   favicon,
-			Title:     title,
-			Font:      "'Roboto', sans-serif",
-			Primary:   "blue",
-			Secondary: "red",
-		},
+		Favicon:   favicon,
+		Title:     title,
+		Font:      "'Roboto', sans-serif",
+		Primary:   "blue",
+		Secondary: "red",
 	}
+
 	u.Pathless.HTML = u.Pathless.baseTemplate()
 	u.Pathless.Body = template.HTML("")
 	u.Router.HandleFunc("/", u.Pathless.Serve)

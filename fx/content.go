@@ -2,7 +2,6 @@ package fx
 
 import (
 	"log"
-	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -11,11 +10,6 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
-
-type Value struct {
-	Content  []byte
-	MimeType string
-}
 
 // LoadEndpoints scans path for all directories (keys) and their files (values)
 func (u *Universe) LoadEndpoints(path string) {
@@ -48,35 +42,24 @@ func (u *Universe) LoadEndpoints(path string) {
 				baseName := strings.TrimSuffix(file.Name(), filepath.Ext(file.Name()))
 				key := entry.Name() + "/" + baseName
 
-				mimeType := mime.TypeByExtension(filepath.Ext(file.Name()))
-				if mimeType == "" {
-					mimeType = "application/octet-stream"
-				}
-
-				u.Path[key] = &Value{
-					Content:  content,
-					MimeType: mimeType,
-				}
+				u.Path[key] = content
 			}
 		}
 	}
 }
 
-// handlePath serves files for any key (directory) in path
+// handlePath serves files for any key
 func (u *Universe) handlePath(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["key"]
-	value := vars["value"]
 
-	lookupKey := key + "/" + value
-	fileData, exists := u.Path[lookupKey]
+	fileData, exists := u.Path[key]
 	if !exists {
 		http.Error(w, "File not found", http.StatusNotFound)
 		return
 	}
 
-	w.Header().Set("Content-Type", fileData.MimeType)
-	w.Write(fileData.Content)
+	w.Write(fileData)
 }
 
 func corsMiddleware() mux.MiddlewareFunc {

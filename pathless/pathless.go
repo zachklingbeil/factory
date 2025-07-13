@@ -1,8 +1,6 @@
-package fx
+package pathless
 
-import (
-	"html/template"
-)
+import "html/template"
 
 type Pathless struct {
 	Favicon   string
@@ -14,7 +12,7 @@ type Pathless struct {
 	Body      template.HTML
 }
 
-func (p *Pathless) baseTemplate() template.HTML {
+func (p *Pathless) Zero() template.HTML {
 	tmpl := `
 <!DOCTYPE html>
 <html lang="en">

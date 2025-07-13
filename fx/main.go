@@ -7,10 +7,11 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/zachklingbeil/factory/pathless"
 )
 
 type Universe struct {
-	Pathless *Pathless
+	Pathless *pathless.Pathless
 	Frame    map[string]*template.HTML
 	Handlers map[string]http.Handler
 	Path     map[string][]byte
@@ -18,17 +19,17 @@ type Universe struct {
 	Ctx      context.Context
 }
 
-func NewUniverse(ctx context.Context) *Universe {
+func NewUniverse(ctx context.Context, mux *mux.Router) *Universe {
 	return &Universe{
-		Frame:    make(map[string]*template.HTML),
-		Router:   mux.NewRouter().StrictSlash(true),
-		Handlers: make(map[string]http.Handler),
+		Router:   mux,
 		Ctx:      ctx,
+		Frame:    make(map[string]*template.HTML),
+		Handlers: make(map[string]http.Handler),
 	}
 }
 
 func (u *Universe) Circuit(favicon, title, path string) error {
-	u.Pathless = &Pathless{
+	u.Pathless = &pathless.Pathless{
 		Favicon:   favicon,
 		Title:     title,
 		Font:      "'Roboto', sans-serif",
@@ -36,9 +37,9 @@ func (u *Universe) Circuit(favicon, title, path string) error {
 		Secondary: "red",
 	}
 
-	u.Pathless.HTML = u.Pathless.baseTemplate()
+	u.Pathless.HTML = u.Pathless.Zero()
 	u.Pathless.Body = template.HTML("")
-	u.Router.HandleFunc("/", u.Pathless.Serve)
+	u.Router.HandleFunc("/", u.Serve)
 
 	u.LoadEndpoints(path)
 	u.Router.Use(corsMiddleware())
@@ -77,13 +78,13 @@ func (u *Universe) AddPath(path string, dir http.FileSystem) {
 	u.Router.PathPrefix(path).Handler(http.StripPrefix(path, http.FileServer(dir)))
 }
 
-func (p *Pathless) Serve(w http.ResponseWriter, r *http.Request) {
+func (u *Universe) Serve(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(p.HTML))
+	w.Write([]byte(u.Pathless.HTML))
 }
 
-func (p *Pathless) Update(w http.ResponseWriter, r *http.Request, content string) {
-	p.Body = template.HTML(content)
+func (u *Universe) Update(w http.ResponseWriter, r *http.Request, content string) {
+	u.Pathless.Body = template.HTML(content)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(p.Body))
+	w.Write([]byte(u.Pathless.Body))
 }

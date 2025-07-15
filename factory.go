@@ -26,7 +26,7 @@ type Factory struct {
 	*mux.Router
 }
 
-func InitFactory() *Factory {
+func InitFactory(color string) *Factory {
 	ctx := context.Background()
 	mu := &sync.Mutex{}
 	when := sync.NewCond(mu)
@@ -40,7 +40,7 @@ func InitFactory() *Factory {
 		Fx:       fx,
 		Router:   router,
 		IO:       io.NewIO(ctx),
-		Pathless: pathless.NewPathless("blue"),
+		Pathless: pathless.NewPathless(color),
 		Path:     path.NewPath(),
 	}
 	return factory

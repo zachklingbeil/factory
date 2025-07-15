@@ -16,6 +16,16 @@ type Pathless struct {
 	Md    *goldmark.Markdown
 }
 
+func (p *Pathless) NewPathless(color string, body template.HTML) *Pathless {
+	pathless := &Pathless{
+		Font:  "'Roboto', sans-serif",
+		Color: color,
+		Md:    InitGoldmark(),
+	}
+	pathless.Zero(body)
+	return p
+}
+
 func (p *Pathless) One(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	w.Write([]byte(*p.HTML))

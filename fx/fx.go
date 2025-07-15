@@ -10,6 +10,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
 
@@ -24,6 +26,16 @@ func InitFx(ctx context.Context) *Fx {
 	return &Fx{
 		Ctx: ctx,
 	}
+}
+
+func (f *Fx) NewRouter() *mux.Router {
+	router := mux.NewRouter().StrictSlash(true)
+	router.Use(handlers.CORS(
+		handlers.AllowedHeaders([]string{"X-Requested-With", "X-API-KEY", "Content-Type", "Peer", "Cache-Control", "Connection", "Authorization"}),
+		handlers.AllowedOrigins([]string{"*"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"}),
+	))
+	return router
 }
 
 // Establish geth.ipc connection

@@ -28,29 +28,31 @@ func InitFactory() *Factory {
 	ctx := context.Background()
 	mu := &sync.Mutex{}
 	when := sync.NewCond(mu)
+	fx := fx.InitFx(ctx)
 	factory := &Factory{
 		Ctx:      ctx,
 		Mutex:    mu,
 		Cond:     when,
 		RWMutex:  &sync.RWMutex{},
+		Fx:       fx,
+		Router:   fx.NewRouter(),
 		IO:       io.NewIO(ctx),
-		Fx:       fx.InitFx(ctx),
 		Pathless: &pathless.Pathless{},
-		Router:   mux.NewRouter().StrictSlash(true),
 	}
 	return factory
 }
 
 func (f *Factory) InitPathless(color string, body template.HTML) {
-	f.Pathless = &pathless.Pathless{
-		Font:  "'Roboto', sans-serif",
-		Color: color,
-		Md:    pathless.InitGoldmark(),
-	}
-	f.Zero(body)
+	f.NewPathless(color, body)
 	f.HandleFunc("/", f.One).Methods("GET")
 	go func() {
-		log.Println("Starting pathless on :10101")
-		http.ListenAndServe(":10101", f.Router)
+		log.Println("Starting pathless on :1001")
+		http.ListenAndServe(":1001", f.Router)
 	}()
+}
+
+func (f *Factory) Swap(newBody template.HTML) {
+	f.Mutex.Lock()
+	defer f.Mutex.Unlock()
+	f.Pathless.HTML = &newBody
 }

@@ -16,14 +16,13 @@ type Pathless struct {
 	Md    *goldmark.Markdown
 }
 
-func (p *Pathless) NewPathless(color string, body template.HTML) *Pathless {
+func NewPathless(color string) *Pathless {
 	pathless := &Pathless{
 		Font:  "'Roboto', sans-serif",
 		Color: color,
-		Md:    InitGoldmark(),
+		Md:    initGoldmark(),
 	}
-	pathless.Zero(body)
-	return p
+	return pathless
 }
 
 func (p *Pathless) One(w http.ResponseWriter, r *http.Request) {

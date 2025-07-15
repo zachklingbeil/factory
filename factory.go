@@ -40,14 +40,14 @@ func InitFactory() *Factory {
 		Fx:       fx,
 		Router:   router,
 		IO:       io.NewIO(ctx),
-		Pathless: &pathless.Pathless{},
+		Pathless: pathless.NewPathless("blue"),
 		Path:     path.NewPath(),
 	}
 	return factory
 }
 
-func (f *Factory) InitPathless(color string, body template.HTML) {
-	f.NewPathless(color, body)
+func (f *Factory) InitPathless(body template.HTML) {
+	f.Zero(body)
 	f.HandleFunc("/", f.One).Methods("GET")
 	go func() {
 		log.Println("Starting pathless on :1001")

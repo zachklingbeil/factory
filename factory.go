@@ -2,6 +2,7 @@ package factory
 
 import (
 	"context"
+	"html/template"
 	"sync"
 
 	"github.com/zachklingbeil/factory/io"
@@ -29,4 +30,8 @@ func InitFactory() *Factory {
 		IO:   io.NewIO(ctx),
 	}
 	return factory
+}
+
+func (f *Factory) InitPathless(color string, body template.HTML) {
+	f.Pathless = pathless.InitPathless(color, body)
 }

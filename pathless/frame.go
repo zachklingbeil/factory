@@ -59,7 +59,7 @@ func (p *Pathless) AddJS(frame template.HTML, js string) template.HTML {
 	return template.HTML(builder.String())
 }
 
-func initGoldmark() *goldmark.Markdown {
+func InitGoldmark() *goldmark.Markdown {
 	md := goldmark.New(
 		goldmark.WithExtensions(extension.GFM),
 		goldmark.WithParserOptions(

@@ -2,8 +2,8 @@ package factory
 
 import (
 	"context"
+	"fmt"
 	"html/template"
-	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -61,31 +61,23 @@ func (f *Factory) AddFrame(name string, elements ...template.HTML) {
 	})
 }
 
-// LoadText loads all markdown files in a directory and creates frames for them
-func (f *Factory) LoadText(dirPath string) error {
-	err := filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, err error) error {
-		if err != nil || d.IsDir() {
-			return err
-		}
+// LoadMarkdownFile loads a single markdown file and creates a frame for it
+func (f *Factory) LoadText(filePath string) error {
+	ext := strings.ToLower(filepath.Ext(filePath))
+	if ext != ".md" && ext != ".markdown" {
+		return fmt.Errorf("file %s is not a markdown file", filePath)
+	}
 
-		ext := strings.ToLower(filepath.Ext(d.Name()))
-		if ext != ".md" && ext != ".markdown" {
-			return nil
-		}
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
 
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
+	// Use filename without extension as frame name
+	fileName := filepath.Base(filePath)
+	frameName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
 
-		// Use filename without extension as frame name
-		frameName := strings.TrimSuffix(d.Name(), filepath.Ext(d.Name()))
-
-		// Convert markdown to HTML and add as frame
-		htmlContent := f.MarkdownToHTML(string(content))
-		f.AddFrame(frameName, htmlContent)
-
-		return nil
-	})
-	return err
+	htmlContent := f.MarkdownToHTML(string(content))
+	f.AddFrame(frameName, htmlContent)
+	return nil
 }

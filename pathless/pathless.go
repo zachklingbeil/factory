@@ -12,7 +12,7 @@ type Pathless struct {
 	HTML      *template.HTML
 }
 
-func NewPathless(favicon, title, url string) *Pathless {
+func InitPathless(favicon, title, url string) *Pathless {
 	pathless := &Pathless{
 		Favicon:   favicon,
 		Title:     title,
@@ -55,7 +55,7 @@ func (p *Pathless) Zero() template.HTML {
             body {
                 color: white;
                 background-color: black;
-                overflow: hidden;
+                overflow-y: auto;
                 height: 100vh;
                 width: 100vw;
                 font-family: ` + p.Font + `;

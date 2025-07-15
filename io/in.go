@@ -8,16 +8,16 @@ import (
 	"net/url"
 )
 
-type Json struct {
+type IO struct {
 	Http *http.Client
-	ctx  context.Context
+	Ctx  context.Context
 }
 
-// NewJson creates a new Json instance with a default Http client and context
-func NewJson(ctx context.Context) *Json {
-	return &Json{
+// NewJson creates a new IO instance with a default Http client and context
+func NewIO(ctx context.Context) *IO {
+	return &IO{
 		Http: &http.Client{},
-		ctx:  ctx,
+		Ctx:  ctx,
 	}
 }
 
@@ -25,8 +25,8 @@ func NewJson(ctx context.Context) *Json {
 type GetOption func(*http.Request)
 
 // Get executes Http GET requests with the given URL and options
-func (j *Json) In(endpoint string, options ...GetOption) ([]byte, error) {
-	req, err := j.createRequest(endpoint)
+func (i *IO) In(endpoint string, options ...GetOption) ([]byte, error) {
+	req, err := i.createRequest(endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -34,17 +34,17 @@ func (j *Json) In(endpoint string, options ...GetOption) ([]byte, error) {
 	for _, option := range options {
 		option(req)
 	}
-	return j.executeRequest(req)
+	return i.executeRequest(req)
 }
 
 // createRequest creates and configures the base Http GET request
-func (j *Json) createRequest(endpoint string) (*http.Request, error) {
+func (i *IO) createRequest(endpoint string) (*http.Request, error) {
 	parsedURL, err := url.Parse(endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse URL %s: %w", endpoint, err)
 	}
 
-	req, err := http.NewRequestWithContext(j.ctx, "GET", parsedURL.String(), nil)
+	req, err := http.NewRequestWithContext(i.Ctx, "GET", parsedURL.String(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GET request for URL %s: %w", parsedURL.String(), err)
 	}
@@ -53,8 +53,8 @@ func (j *Json) createRequest(endpoint string) (*http.Request, error) {
 }
 
 // executeRequest executes the Http request and returns the response body
-func (j *Json) executeRequest(req *http.Request) ([]byte, error) {
-	resp, err := j.Http.Do(req)
+func (i *IO) executeRequest(req *http.Request) ([]byte, error) {
+	resp, err := i.Http.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute GET request: %w", err)
 	}

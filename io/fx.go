@@ -68,7 +68,7 @@ func WithQueryMap(params map[string]string) GetOption {
 }
 
 // Simplify processes any input, flattens it, and removes empty fields.
-func (j *Json) Simplify(input any) any {
+func (i *IO) Simplify(input any) any {
 	result := make(map[string]any)
 
 	// Use a stack to avoid recursion

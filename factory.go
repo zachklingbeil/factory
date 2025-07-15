@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	"github.com/gorilla/mux"
-	"github.com/zachklingbeil/factory/fx"
 	"github.com/zachklingbeil/factory/io"
+	"github.com/zachklingbeil/universe"
 )
 
 type Factory struct {
@@ -14,9 +14,9 @@ type Factory struct {
 	Mu     *sync.Mutex
 	Rw     *sync.RWMutex
 	When   *sync.Cond
-	Json   *io.Json
 	Router *mux.Router
-	*fx.Universe
+	*io.IO
+	*universe.Universe
 }
 
 func InitFactory() *Factory {
@@ -29,7 +29,16 @@ func InitFactory() *Factory {
 		Mu:     mu,
 		Rw:     rw,
 		When:   when,
+		IO:     io.NewIO(ctx),
 		Router: mux.NewRouter().StrictSlash(true),
 	}
+
 	return factory
+}
+
+func (f *Factory) HelloUniverse(favicon, title, url string) *universe.Universe {
+	if f.Universe == nil {
+		f.Universe = universe.HelloUniverse(favicon, title, url)
+	}
+	return f.Universe
 }

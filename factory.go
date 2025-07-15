@@ -48,7 +48,12 @@ func (f *Factory) HelloUniverse(favicon, title, url string) error {
 	return nil
 }
 
-func (f *Factory) AddFrame(key string, elements ...template.HTML) *template.HTML {
+func (f *Factory) AddFrame(name string, elements ...template.HTML) *template.HTML {
 	frame := f.Universe.CreateFrame(elements...)
+	f.Universe.Map[name] = frame
+	f.Universe.HandleFunc("/0/"+name, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte(*frame))
+	})
 	return frame
 }

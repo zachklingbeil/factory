@@ -2,9 +2,6 @@ package frame
 
 import (
 	"html/template"
-	"io/fs"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -17,32 +14,6 @@ var (
 	link   = regexp.MustCompile(`\[([^\]]+)\]\(([^)]+)\)`)
 	img    = regexp.MustCompile(`!\[([^\]]*)\]\(([^)]+)(?:\s+"([^"]*)")?\)`)
 )
-
-// LoadText initializes the Text struct and sets up the router
-func (f *Frame) LoadText(dirPath string) ([]*template.HTML, error) {
-	var frames []*template.HTML
-
-	err := filepath.WalkDir(dirPath, func(path string, d fs.DirEntry, err error) error {
-		if err != nil || d.IsDir() {
-			return err
-		}
-
-		ext := strings.ToLower(filepath.Ext(d.Name()))
-		if ext != ".md" && ext != ".markdown" {
-			return nil
-		}
-
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-
-		frame := f.CreateFrame(f.MarkdownToHTML(string(content)))
-		frames = append(frames, frame)
-		return nil
-	})
-	return frames, err
-}
 
 // MarkdownToHTML converts markdown text to HTML using existing methods
 func (f *Frame) MarkdownToHTML(markdown string) template.HTML {

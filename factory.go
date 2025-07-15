@@ -30,3 +30,7 @@ func InitFactory() *Factory {
 	}
 	return factory
 }
+
+func (f *Factory) InitPathless(favicon, title, url string) {
+	f.Pathless = pathless.InitPathless(favicon, title, url)
+}

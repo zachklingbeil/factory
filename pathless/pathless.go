@@ -69,24 +69,7 @@ func (p *Pathless) Zero() template.HTML {
                 border: medium solid ` + p.Primary + `;
             }
         </style>
-        <script>
-            async function loadFrame() {
-                try {
-                    const response = await fetch('` + p.URL + `');
-                    const html = await response.text();
-                    document.body.innerHTML = html;
-                } catch (error) {
-                    console.error('Failed to load frame:', error);
-                }
-            }            
-            // Load initial frame on page load
-            document.addEventListener('DOMContentLoaded', function() {
-                loadFrame();
-            });
-        </script>
     </head>
-    <body>
-    </body>
 </html>`
 	return template.HTML(tmpl)
 }

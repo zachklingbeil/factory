@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/zachklingbeil/factory/fx"
 	"github.com/zachklingbeil/factory/io"
+	"github.com/zachklingbeil/factory/path"
 	"github.com/zachklingbeil/factory/pathless"
 )
 
@@ -21,6 +22,7 @@ type Factory struct {
 	*io.IO
 	*fx.Fx
 	*pathless.Pathless
+	*path.Path
 	*mux.Router
 }
 
@@ -29,15 +31,17 @@ func InitFactory() *Factory {
 	mu := &sync.Mutex{}
 	when := sync.NewCond(mu)
 	fx := fx.InitFx(ctx)
+	router := fx.NewRouter()
 	factory := &Factory{
 		Ctx:      ctx,
 		Mutex:    mu,
 		Cond:     when,
 		RWMutex:  &sync.RWMutex{},
 		Fx:       fx,
-		Router:   fx.NewRouter(),
+		Router:   router,
 		IO:       io.NewIO(ctx),
 		Pathless: &pathless.Pathless{},
+		Path:     path.NewPath(),
 	}
 	return factory
 }
@@ -55,4 +59,8 @@ func (f *Factory) Swap(newBody template.HTML) {
 	f.Mutex.Lock()
 	defer f.Mutex.Unlock()
 	f.Pathless.HTML = &newBody
+}
+
+func (f *Factory) AddConstant(dir string) {
+	f.AddConstants(dir, f.Router)
 }

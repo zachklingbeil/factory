@@ -20,6 +20,12 @@ type Fx struct {
 	Ctx context.Context
 }
 
+func InitFx(ctx context.Context) *Fx {
+	return &Fx{
+		Ctx: ctx,
+	}
+}
+
 // Establish geth.ipc connection
 func (f *Fx) Node() (*rpc.Client, *ethclient.Client) {
 	rpc, err := rpc.DialIPC(f.Ctx, "/ethereum/geth.ipc") // Updated path

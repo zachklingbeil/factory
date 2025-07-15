@@ -2,9 +2,9 @@ package factory
 
 import (
 	"context"
-	"html/template"
 	"sync"
 
+	"github.com/zachklingbeil/factory/fx"
 	"github.com/zachklingbeil/factory/io"
 	"github.com/zachklingbeil/factory/pathless"
 )
@@ -14,8 +14,9 @@ type Factory struct {
 	Mu   *sync.Mutex
 	Rw   *sync.RWMutex
 	When *sync.Cond
-	*io.IO
-	*pathless.Pathless
+	IO   *io.IO
+	Fx   *fx.Fx
+	Zero *pathless.Pathless
 }
 
 func InitFactory() *Factory {
@@ -28,10 +29,8 @@ func InitFactory() *Factory {
 		When: when,
 		Rw:   &sync.RWMutex{},
 		IO:   io.NewIO(ctx),
+		Fx:   fx.InitFx(ctx),
+		Zero: &pathless.Pathless{},
 	}
 	return factory
-}
-
-func (f *Factory) InitPathless(color string, body template.HTML) {
-	f.Pathless = pathless.InitPathless(color, body)
 }

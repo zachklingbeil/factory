@@ -17,20 +17,17 @@ type Factory struct {
 	*pathless.Pathless
 }
 
-func InitFactory() *Factory {
+func InitFactory(color string) *Factory {
 	ctx := context.Background()
 	mu := &sync.Mutex{}
 	when := sync.NewCond(mu)
 	factory := &Factory{
-		Ctx:  ctx,
-		Mu:   mu,
-		When: when,
-		Rw:   &sync.RWMutex{},
-		IO:   io.NewIO(ctx),
+		Ctx:      ctx,
+		Mu:       mu,
+		When:     when,
+		Rw:       &sync.RWMutex{},
+		IO:       io.NewIO(ctx),
+		Pathless: pathless.InitPathless(color),
 	}
 	return factory
-}
-
-func (f *Factory) InitPathless(favicon, title, url string) {
-	f.Pathless = pathless.InitPathless(favicon, title, url)
 }

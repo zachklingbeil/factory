@@ -71,7 +71,7 @@ func (f *Factory) AddText(file string, elements ...template.HTML) template.HTML 
 	f.Mutex.Lock()
 	defer f.Mutex.Unlock()
 	style := f.AddCSS(map[string]string{
-		".text": "font-size: 1.2em; line-height: 1.5;", "width": "95vw; height: 95vh;",
+		".text": "font-size: 1.2em; line-height: 1.5;", "width": "95vw; height: 95vh; justify-content: center;",
 	})
 
 	allElements := append(elements, style)

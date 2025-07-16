@@ -9,7 +9,6 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
-	yhtml "github.com/yuin/goldmark/renderer/html"
 )
 
 // --- Generic tag builders ---
@@ -123,8 +122,8 @@ func initGoldmark() *goldmark.Markdown {
 			parser.WithAutoHeadingID(),
 		),
 		goldmark.WithRendererOptions(
-			yhtml.WithHardWraps(),
-			// yhtml.WithXHTML(),
+		// yhtml.WithHardWraps(),
+		// yhtml.WithXHTML(),
 		),
 	)
 	return &md

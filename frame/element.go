@@ -5,6 +5,7 @@ import (
 	"html"
 	"html/template"
 
+	mathjax "github.com/litao91/goldmark-mathjax"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
@@ -108,7 +109,7 @@ func (f *Frame) Time(s string) template.HTML   { return Tag("time", s) }
 
 func initGoldmark() *goldmark.Markdown {
 	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM),
+		goldmark.WithExtensions(extension.GFM, mathjax.MathJax),
 		goldmark.WithParserOptions(
 			parser.WithAutoHeadingID(),
 		),

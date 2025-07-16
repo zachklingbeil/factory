@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"html/template"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/yuin/goldmark"
@@ -19,15 +18,6 @@ func NewFrame() *Frame {
 		Md: initGoldmark(),
 	}
 }
-
-// Compiled regex patterns for better performance
-var (
-	bold   = regexp.MustCompile(`\*\*(.*?)\*\*|__(.*?)__`)
-	italic = regexp.MustCompile(`(?:\*([^*]+)\*|_([^_]+)_)`)
-	code   = regexp.MustCompile("`([^`]+)`")
-	link   = regexp.MustCompile(`\[([^\]]+)\]\(([^)]+)\)`)
-	img    = regexp.MustCompile(`!\[([^\]]*)\]\(([^)]+)(?:\s+"([^"]*)")?\)`)
-)
 
 func (f *Frame) CreateFrame(elements ...template.HTML) template.HTML {
 	if len(elements) == 0 {

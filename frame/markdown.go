@@ -46,27 +46,27 @@ func (f *Frame) FromMarkdown(file string, elements ...template.HTML) template.HT
 	allElements = append(allElements, elements...)
 	frameHTML := f.CreateFrame(allElements...)
 
-	// Post-process <img> tags in frameHTML, set width directly
-	imgRe := regexp.MustCompile(`<img\s+([^>]*alt="(img\+?|img-)"[^>]*)>`)
+	// Post-process <img> tags in frameHTML, assign class based on alt
+	imgRe := regexp.MustCompile(`<img\s+[^>]*alt="(img\+?|img-)"[^>]*>`)
 	processed := imgRe.ReplaceAllStringFunc(string(frameHTML), func(imgTag string) string {
 		altRe := regexp.MustCompile(`alt="([^"]*)"`)
 		alt := "img"
 		if m := altRe.FindStringSubmatch(imgTag); m != nil {
 			alt = m[1]
 		}
-		width := "50vw"
+		class := "image"
 		switch alt {
 		case "img+":
-			width = "75vw"
+			class = "image-large"
 		case "img-":
-			width = "25vw"
+			class = "image-small"
 		}
-		// Replace or add width attribute
-		widthRe := regexp.MustCompile(`width="[^"]*"`)
-		if widthRe.MatchString(imgTag) {
-			imgTag = widthRe.ReplaceAllString(imgTag, `width="`+width+`"`)
+		// Replace or add class attribute
+		classRe := regexp.MustCompile(`class="[^"]*"`)
+		if classRe.MatchString(imgTag) {
+			imgTag = classRe.ReplaceAllString(imgTag, `class="`+class+`"`)
 		} else {
-			imgTag = imgTag[:len(imgTag)-1] + ` width="` + width + `" height="auto">`
+			imgTag = imgTag[:len(imgTag)-1] + ` class="` + class + `">`
 		}
 		return imgTag
 	})

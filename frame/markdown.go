@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	img = regexp.MustCompile(`!\[([^\]]*)\]\(([^)]+)(?:\s+"([^"]*)")?\)`)
+	imgTag = regexp.MustCompile(`<img\s+[^>]*alt="([^"]*)"[^>]*src="([^"]+)"[^>]*>`)
 )
 
 func (f *Frame) FromMarkdown(file string, elements ...template.HTML) template.HTML {
@@ -18,20 +18,25 @@ func (f *Frame) FromMarkdown(file string, elements ...template.HTML) template.HT
 	}
 	md := string(content)
 
-	md = img.ReplaceAllStringFunc(md, func(match string) string {
-		m := img.FindStringSubmatch(match)
-		if len(m) >= 3 {
+	// First, convert markdown to HTML
+	var buf bytes.Buffer
+	if err := (*f.Md).Convert([]byte(md), &buf); err != nil {
+		return template.HTML("")
+	}
+	htmlStr := buf.String()
+
+	// Then, process <img> tags for sizing
+	htmlStr = imgTag.ReplaceAllStringFunc(htmlStr, func(match string) string {
+		m := imgTag.FindStringSubmatch(match)
+		if len(m) == 3 {
 			alt, src := m[1], m[2]
+			// Always use 50vw for width as per your requirement
 			return string(f.Img(src, alt, "50vw"))
 		}
 		return match
 	})
 
-	var buf bytes.Buffer
-	if err := (*f.Md).Convert([]byte(md), &buf); err != nil {
-		return template.HTML("")
-	}
-	wrapped := template.HTML(`<div class="text">` + buf.String() + `</div>`)
+	wrapped := template.HTML(`<div class="text">` + htmlStr + `</div>`)
 	allElements := make([]template.HTML, 0, len(elements)+1)
 	allElements = append(allElements, wrapped)
 	allElements = append(allElements, elements...)

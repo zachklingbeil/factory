@@ -71,6 +71,11 @@ func (p *Pathless) Zero(body template.HTML) {
             flex-direction: column;
             overflow-y: auto;
         }
+        .text {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
     </style>
 </head>
 <body><main>{{.Body}}</main></body>

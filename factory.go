@@ -72,8 +72,3 @@ func (f *Factory) AddText(file string, elements ...template.HTML) template.HTML 
 	defer f.Mutex.Unlock()
 	return f.FromMarkdown(file, elements...)
 }
-func (f *Factory) AddText2(file string, elements ...template.HTML) template.HTML {
-	f.Mutex.Lock()
-	defer f.Mutex.Unlock()
-	return f.FromMarkdown2(file, elements...)
-}

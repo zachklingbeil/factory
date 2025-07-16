@@ -75,5 +75,6 @@ func (f *Factory) AddText(file string, elements ...template.HTML) template.HTML 
 	})
 
 	allElements := append(elements, style)
-	return f.FromMarkdown(file, allElements...)
+	content := f.FromMarkdown(file, allElements...)
+	return template.HTML(`<div class="text">` + string(content) + `</div>`)
 }

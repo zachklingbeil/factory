@@ -9,6 +9,7 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
+	yhtml "github.com/yuin/goldmark/renderer/html"
 )
 
 // --- Generic tag builders ---
@@ -47,18 +48,10 @@ func (f *Frame) List(items []any, ordered bool) template.HTML {
 	return template.HTML(fmt.Sprintf("<%s>%s</%s>", tag, list, tag))
 }
 
-func (f *Frame) Img(src, alt, width, height string) template.HTML {
-	return ClosedTag("img", map[string]string{"src": src, "alt": alt, "width": width, "height": height})
+func (f *Frame) Img(src, alt, width string) template.HTML {
+	return ClosedTag("img", map[string]string{"src": src, "alt": alt, "width": width, "height": "auto"})
 }
-func (f *Frame) Img2(src, alt string) template.HTML {
-	return ClosedTag("img", map[string]string{"src": src, "alt": alt, "width": "75vw", "height": "auto"})
-}
-func (f *Frame) Img3(src, alt string) template.HTML {
-	return ClosedTag("img", map[string]string{"src": src, "alt": alt, "width": "50vw", "height": "auto"})
-}
-func (f *Frame) Img4(src, alt string) template.HTML {
-	return ClosedTag("img", map[string]string{"src": src, "alt": alt, "width": "25vw", "height": "auto"})
-}
+
 func (f *Frame) Video(src string) template.HTML {
 	return template.HTML(fmt.Sprintf(`<video controls src="%s"></video>`, html.EscapeString(src)))
 }
@@ -120,10 +113,13 @@ func initGoldmark() *goldmark.Markdown {
 		goldmark.WithExtensions(extension.GFM, mathjax.MathJax),
 		goldmark.WithParserOptions(
 			parser.WithAutoHeadingID(),
+			parser.WithAttribute(),
+			parser.WithBlockParsers(),
+			parser.WithInlineParsers(),
 		),
 		goldmark.WithRendererOptions(
-		// yhtml.WithHardWraps(),
-		// yhtml.WithXHTML(),
+			yhtml.WithHardWraps(),
+			// yhtml.WithXHTML(),
 		),
 	)
 	return &md

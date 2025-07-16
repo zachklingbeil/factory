@@ -70,13 +70,5 @@ func (f *Factory) AddConstant(dir string) {
 func (f *Factory) AddText(file string, elements ...template.HTML) template.HTML {
 	f.Mutex.Lock()
 	defer f.Mutex.Unlock()
-	content := f.FromMarkdown(file, elements...)
-	return template.HTML(`<div class="text">` + string(content) + `</div>`)
-}
-
-func (f *Factory) AddText2(file string, elements ...template.HTML) template.HTML {
-	f.Mutex.Lock()
-	defer f.Mutex.Unlock()
-	content := f.MarkdownToHTML(file, elements...)
-	return template.HTML(`<div class="text">` + string(content) + `</div>`)
+	return f.FromMarkdown(file, elements...)
 }

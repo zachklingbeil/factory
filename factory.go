@@ -70,11 +70,13 @@ func (f *Factory) AddConstant(dir string) {
 func (f *Factory) AddText(file string, elements ...template.HTML) template.HTML {
 	f.Mutex.Lock()
 	defer f.Mutex.Unlock()
-	style := f.AddCSS(map[string]string{
-		".text": "font-size: 1.2em; line-height: 1.5; width: 95vw; height: 95vh; display: flex; justify-content: center; align-items: center;",
-	})
+	content := f.FromMarkdown(file, elements...)
+	return template.HTML(`<div class="text">` + string(content) + `</div>`)
+}
 
-	allElements := append(elements, style)
-	content := f.MarkdownToHTML(file, allElements...)
+func (f *Factory) AddText2(file string, elements ...template.HTML) template.HTML {
+	f.Mutex.Lock()
+	defer f.Mutex.Unlock()
+	content := f.MarkdownToHTML(file, elements...)
 	return template.HTML(`<div class="text">` + string(content) + `</div>`)
 }

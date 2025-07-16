@@ -79,7 +79,7 @@ func (f *Frame) FromMarkdown(file string, elements ...template.HTML) template.HT
 	return f.CreateFrame(allElements...)
 }
 
-func (f *Frame) MarkdownToHTML(file string) template.HTML {
+func (f *Frame) MarkdownToHTML(file string, elements ...template.HTML) template.HTML {
 	content, err := os.ReadFile(file)
 	if err != nil {
 		return template.HTML("")
@@ -91,7 +91,7 @@ func (f *Frame) MarkdownToHTML(file string) template.HTML {
 	}
 
 	lines := strings.Split(markdown, "\n")
-	elements := make([]template.HTML, 0, len(lines))
+	mdElements := make([]template.HTML, 0, len(lines))
 
 	for i := 0; i < len(lines); i++ {
 		line := strings.TrimSpace(lines[i])
@@ -102,28 +102,30 @@ func (f *Frame) MarkdownToHTML(file string) template.HTML {
 
 		switch {
 		case strings.HasPrefix(line, "######"):
-			elements = append(elements, f.H6(strings.TrimSpace(line[6:])))
+			mdElements = append(mdElements, f.H6(strings.TrimSpace(line[6:])))
 		case strings.HasPrefix(line, "#####"):
-			elements = append(elements, f.H5(strings.TrimSpace(line[5:])))
+			mdElements = append(mdElements, f.H5(strings.TrimSpace(line[5:])))
 		case strings.HasPrefix(line, "####"):
-			elements = append(elements, f.H4(strings.TrimSpace(line[4:])))
+			mdElements = append(mdElements, f.H4(strings.TrimSpace(line[4:])))
 		case strings.HasPrefix(line, "###"):
-			elements = append(elements, f.H3(strings.TrimSpace(line[3:])))
+			mdElements = append(mdElements, f.H3(strings.TrimSpace(line[3:])))
 		case strings.HasPrefix(line, "##"):
-			elements = append(elements, f.H2(strings.TrimSpace(line[2:])))
+			mdElements = append(mdElements, f.H2(strings.TrimSpace(line[2:])))
 		case strings.HasPrefix(line, "#"):
-			elements = append(elements, f.H1(strings.TrimSpace(line[1:])))
+			mdElements = append(mdElements, f.H1(strings.TrimSpace(line[1:])))
 		case strings.HasPrefix(line, "- ") || strings.HasPrefix(line, "* "):
 			listItems, newIndex := f.parseList(lines, i)
-			elements = append(elements, f.List(listItems, false))
+			mdElements = append(mdElements, f.List(listItems, false))
 			i = newIndex
 		default:
 			formatted := f.processInlineFormatting(line)
-			elements = append(elements, f.Paragraph(formatted))
+			mdElements = append(mdElements, f.Paragraph(formatted))
 		}
 	}
 
-	return f.CreateFrame(elements...)
+	// Combine markdown elements with any additional elements passed in
+	allElements := append(mdElements, elements...)
+	return f.CreateFrame(allElements...)
 }
 
 // parseList extracts list items starting from the given index
@@ -152,7 +154,7 @@ func (f *Frame) processInlineFormatting(text string) string {
 	text = img.ReplaceAllStringFunc(text, func(match string) string {
 		matches := img.FindStringSubmatch(match)
 		if len(matches) >= 3 {
-			return string(f.Img(matches[2], matches[1], "", ""))
+			return string(f.Img(matches[2], matches[1], "50vw", "auto"))
 		}
 		return match
 	})
@@ -185,18 +187,4 @@ func (f *Frame) processInlineFormatting(text string) string {
 	})
 
 	return text
-}
-
-// combineElements efficiently combines HTML elements
-func (f *Frame) combineElements(elements []template.HTML) template.HTML {
-	if len(elements) == 0 {
-		return template.HTML("")
-	}
-
-	var result strings.Builder
-	for _, element := range elements {
-		result.WriteString(string(element))
-	}
-
-	return template.HTML(result.String())
 }

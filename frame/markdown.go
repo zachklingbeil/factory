@@ -16,6 +16,23 @@ func (f *Frame) FromMarkdown(file string, elements ...template.HTML) template.HT
 	if err != nil {
 		return template.HTML("")
 	}
+
+	var buf bytes.Buffer
+	if err := (*f.Md).Convert(content, &buf); err != nil {
+		return template.HTML("")
+	}
+	wrapped := template.HTML(`<div class="text">` + buf.String() + `</div>`)
+	allElements := make([]template.HTML, 0, len(elements)+1)
+	allElements = append(allElements, wrapped)
+	allElements = append(allElements, elements...)
+	return f.CreateFrame(allElements...)
+}
+
+func (f *Frame) FromMarkdown2(file string, elements ...template.HTML) template.HTML {
+	content, err := os.ReadFile(file)
+	if err != nil {
+		return template.HTML("")
+	}
 	md := string(content)
 
 	parts := img.FindAllStringIndex(md, -1)

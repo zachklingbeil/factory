@@ -56,6 +56,15 @@ func (p *Pathless) Zero(body template.HTML) {
             border-radius: 0.3125em;
             display: flex;
         }
+        a,
+        a:hover,
+        a:visited,
+        a:active,
+        a:focus {
+            text-align: center;
+            color: inherit;
+            text-decoration: underline;
+        }
         main {
             flex: 1;
             display: flex;

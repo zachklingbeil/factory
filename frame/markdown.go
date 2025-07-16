@@ -2,6 +2,7 @@ package frame
 
 import (
 	"bytes"
+	"html"
 	"html/template"
 	"os"
 	"regexp"
@@ -10,7 +11,11 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/renderer/html"
+	gold "github.com/yuin/goldmark/renderer/html"
+)
+
+var (
+	image = regexp.MustCompile(`<img\s+[^>]*alt="(img\+?|img-)"[^>]*>`)
 )
 
 func initGoldmark() *goldmark.Markdown {
@@ -23,8 +28,8 @@ func initGoldmark() *goldmark.Markdown {
 			parser.WithInlineParsers(),
 		),
 		goldmark.WithRendererOptions(
-			html.WithHardWraps(),
-			html.WithXHTML(),
+			gold.WithHardWraps(),
+			gold.WithXHTML(),
 		),
 	)
 	return &md
@@ -74,7 +79,6 @@ func (f *Frame) FromMarkdown(file string, elements ...template.HTML) template.HT
 	return template.HTML(processed)
 }
 
-// ...existing code...
 func (f *Frame) FromMarkdown2(file string, elements ...template.HTML) template.HTML {
 	content, err := os.ReadFile(file)
 	if err != nil {
@@ -89,5 +93,30 @@ func (f *Frame) FromMarkdown2(file string, elements ...template.HTML) template.H
 	allElements := make([]template.HTML, 0, len(elements)+1)
 	allElements = append(allElements, wrapped)
 	allElements = append(allElements, elements...)
-	return f.CreateFrame(allElements...)
+	frameHTML := f.CreateFrame(allElements...)
+
+	// Post-process <img> tags in frameHTML, replace with f.Img
+	processed := image.ReplaceAllStringFunc(string(frameHTML), func(imgTag string) string {
+		// Extract src and alt
+		srcRe := regexp.MustCompile(`src="([^"]*)"`)
+		altRe := regexp.MustCompile(`alt="([^"]*)"`)
+		src := ""
+		alt := ""
+		if m := srcRe.FindStringSubmatch(imgTag); m != nil {
+			src = html.UnescapeString(m[1])
+		}
+		if m := altRe.FindStringSubmatch(imgTag); m != nil {
+			alt = m[1]
+		}
+		width := "50vw"
+		switch alt {
+		case "img+":
+			width = "75vw"
+		case "img-":
+			width = "25vw"
+		}
+		return string(f.Img(src, alt, width))
+	})
+
+	return template.HTML(processed)
 }

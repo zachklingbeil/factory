@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	imgTag = regexp.MustCompile(`<img\s+[^>]*alt="([^"]*)"[^>]*src="([^"]+)"[^>]*>`)
+	img = regexp.MustCompile(`!\[([^\]]*)\]\(([^)]+)\)`)
 )
 
 func (f *Frame) FromMarkdown(file string, elements ...template.HTML) template.HTML {
@@ -18,27 +18,47 @@ func (f *Frame) FromMarkdown(file string, elements ...template.HTML) template.HT
 	}
 	md := string(content)
 
-	// First, convert markdown to HTML
-	var buf bytes.Buffer
-	if err := (*f.Md).Convert([]byte(md), &buf); err != nil {
-		return template.HTML("")
-	}
-	htmlStr := buf.String()
+	parts := img.FindAllStringIndex(md, -1)
+	result := make([]template.HTML, 0, len(parts)+len(elements)+1)
+	last := 0
 
-	// Then, process <img> tags for sizing
-	htmlStr = imgTag.ReplaceAllStringFunc(htmlStr, func(match string) string {
-		m := imgTag.FindStringSubmatch(match)
+	for _, idx := range parts {
+		// Convert text before the image
+		if idx[0] > last {
+			section := md[last:idx[0]]
+			var buf bytes.Buffer
+			if err := (*f.Md).Convert([]byte(section), &buf); err == nil {
+				result = append(result, template.HTML(buf.String()))
+			}
+		}
+		// Handle the image itself
+		imgMatch := md[idx[0]:idx[1]]
+		m := img.FindStringSubmatch(imgMatch)
 		if len(m) == 3 {
 			alt, src := m[1], m[2]
-			// Always use 50vw for width as per your requirement
-			return string(f.Img(src, alt, "50vw"))
+			result = append(result, f.Img(src, alt, "50vw"))
 		}
-		return match
-	})
+		last = idx[1]
+	}
 
-	wrapped := template.HTML(`<div class="text">` + htmlStr + `</div>`)
-	allElements := make([]template.HTML, 0, len(elements)+1)
-	allElements = append(allElements, wrapped)
-	allElements = append(allElements, elements...)
-	return f.CreateFrame(allElements...)
+	// Convert any remaining text after the last image
+	if last < len(md) {
+		section := md[last:]
+		var buf bytes.Buffer
+		if err := (*f.Md).Convert([]byte(section), &buf); err == nil {
+			result = append(result, template.HTML(buf.String()))
+		}
+	}
+
+	// Add any extra elements
+	result = append(result, elements...)
+
+	// Join all sections and wrap in .text
+	final := `<div class="text">`
+	for _, r := range result {
+		final += string(r)
+	}
+	final += `</div>`
+
+	return f.CreateFrame(template.HTML(final))
 }

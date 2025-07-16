@@ -73,6 +73,7 @@ func (f *Factory) AddText(file string, elements ...template.HTML) template.HTML 
 	style := f.AddCSS(map[string]string{
 		".text": "font-size: 1.2em; line-height: 1.5;", "width": "95vw; height: 95vh;",
 	})
+
 	allElements := append(elements, style)
 	return f.FromMarkdown(file, allElements...)
 }

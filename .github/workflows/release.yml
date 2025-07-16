@@ -1,0 +1,31 @@
+name: Bump version and create release
+
+on:
+    push:
+        branches:
+            - main
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            packages: write
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Bump version and push tag
+              id: bump
+              uses: phips28/gh-action-bump-version@v11.0.2
+              with:
+                  tag-prefix: 'v'
+                  default: 'minor'
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  tag_name: ${{ steps.bump.outputs.newTag }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

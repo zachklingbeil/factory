@@ -9,11 +9,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type Value struct {
-	Data []byte
-	Type string
-}
-
 type Path struct {
 	Map map[string]*Value
 }
@@ -22,6 +17,11 @@ func NewPath() *Path {
 	return &Path{
 		Map: make(map[string]*Value),
 	}
+}
+
+type Value struct {
+	Data []byte
+	Type string
 }
 
 // Walk single directory and load files into memory

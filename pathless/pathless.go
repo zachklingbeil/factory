@@ -5,22 +5,18 @@ import (
 	"html/template"
 	"net/http"
 	"strings"
-
-	"github.com/yuin/goldmark"
 )
 
 type Pathless struct {
 	HTML  *template.HTML
 	Font  string
 	Color string
-	Md    *goldmark.Markdown
 }
 
 func NewPathless(color string) *Pathless {
 	pathless := &Pathless{
 		Font:  "'Roboto', sans-serif",
 		Color: color,
-		Md:    initGoldmark(),
 	}
 	return pathless
 }

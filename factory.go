@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/gorilla/mux"
+	"github.com/zachklingbeil/factory/frame"
 	"github.com/zachklingbeil/factory/fx"
 	"github.com/zachklingbeil/factory/io"
 	"github.com/zachklingbeil/factory/path"
@@ -21,6 +22,7 @@ type Factory struct {
 	*sync.Cond
 	*io.IO
 	*fx.Fx
+	*frame.Frame
 	*pathless.Pathless
 	*path.Path
 	*mux.Router
@@ -31,17 +33,17 @@ func InitFactory(color string) *Factory {
 	mu := &sync.Mutex{}
 	when := sync.NewCond(mu)
 	fx := fx.InitFx(ctx)
-	router := fx.NewRouter()
 	factory := &Factory{
 		Ctx:      ctx,
 		Mutex:    mu,
 		Cond:     when,
 		RWMutex:  &sync.RWMutex{},
 		Fx:       fx,
-		Router:   router,
+		Router:   fx.NewRouter(),
 		IO:       io.NewIO(ctx),
 		Pathless: pathless.NewPathless(color),
 		Path:     path.NewPath(),
+		Frame:    frame.NewFrame(),
 	}
 	return factory
 }
@@ -63,4 +65,14 @@ func (f *Factory) Swap(newBody template.HTML) {
 
 func (f *Factory) AddConstant(dir string) {
 	f.AddConstants(dir, f.Router)
+}
+
+func (f *Factory) AddText(file string, elements ...template.HTML) template.HTML {
+	f.Mutex.Lock()
+	defer f.Mutex.Unlock()
+	style := f.AddCSS(map[string]string{
+		".text": "font-size: 1.2em; line-height: 1.5;", "width": "95vw; height: 95vh;",
+	})
+	allElements := append(elements, style)
+	return f.FromMarkdown(file, allElements...)
 }

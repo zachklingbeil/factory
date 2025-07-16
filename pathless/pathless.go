@@ -60,8 +60,6 @@ func (p *Pathless) Zero(body template.HTML) {
             flex: 1;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
             overflow-y: auto;
         }
     </style>

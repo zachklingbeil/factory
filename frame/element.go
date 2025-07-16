@@ -51,6 +51,15 @@ func (f *Frame) List(items []any, ordered bool) template.HTML {
 func (f *Frame) Img(src, alt, width, height string) template.HTML {
 	return ClosedTag("img", map[string]string{"src": src, "alt": alt, "width": width, "height": height})
 }
+func (f *Frame) Img2(src, alt string) template.HTML {
+	return ClosedTag("img", map[string]string{"src": src, "alt": alt, "width": "75vw", "height": "auto"})
+}
+func (f *Frame) Img3(src, alt string) template.HTML {
+	return ClosedTag("img", map[string]string{"src": src, "alt": alt, "width": "50vw", "height": "auto"})
+}
+func (f *Frame) Img4(src, alt string) template.HTML {
+	return ClosedTag("img", map[string]string{"src": src, "alt": alt, "width": "25vw", "height": "auto"})
+}
 func (f *Frame) Video(src string) template.HTML {
 	return template.HTML(fmt.Sprintf(`<video controls src="%s"></video>`, html.EscapeString(src)))
 }

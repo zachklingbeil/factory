@@ -4,12 +4,6 @@ import (
 	"fmt"
 	"html"
 	"html/template"
-
-	mathjax "github.com/litao91/goldmark-mathjax"
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/extension"
-	"github.com/yuin/goldmark/parser"
-	yhtml "github.com/yuin/goldmark/renderer/html"
 )
 
 // --- Generic tag builders ---
@@ -107,20 +101,3 @@ func (f *Frame) Samp(s string) template.HTML   { return Tag("samp", s) }
 func (f *Frame) Var(s string) template.HTML    { return Tag("var", s) }
 func (f *Frame) Abbr(s string) template.HTML   { return Tag("abbr", s) }
 func (f *Frame) Time(s string) template.HTML   { return Tag("time", s) }
-
-func initGoldmark() *goldmark.Markdown {
-	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM, mathjax.MathJax),
-		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(),
-			parser.WithAttribute(),
-			parser.WithBlockParsers(),
-			parser.WithInlineParsers(),
-		),
-		goldmark.WithRendererOptions(
-			yhtml.WithHardWraps(),
-			// yhtml.WithXHTML(),
-		),
-	)
-	return &md
-}

@@ -5,11 +5,30 @@ import (
 	"html/template"
 	"os"
 	"regexp"
+
+	mathjax "github.com/litao91/goldmark-mathjax"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer/html"
 )
 
-var (
-	img = regexp.MustCompile(`!\[([^\]]*)\]\(([^)]+)\)`)
-)
+func initGoldmark() *goldmark.Markdown {
+	md := goldmark.New(
+		goldmark.WithExtensions(extension.GFM, mathjax.MathJax),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+			parser.WithAttribute(),
+			parser.WithBlockParsers(),
+			parser.WithInlineParsers(),
+		),
+		goldmark.WithRendererOptions(
+			html.WithHardWraps(),
+			html.WithXHTML(),
+		),
+	)
+	return &md
+}
 
 func (f *Frame) FromMarkdown(file string, elements ...template.HTML) template.HTML {
 	content, err := os.ReadFile(file)
@@ -25,57 +44,50 @@ func (f *Frame) FromMarkdown(file string, elements ...template.HTML) template.HT
 	allElements := make([]template.HTML, 0, len(elements)+1)
 	allElements = append(allElements, wrapped)
 	allElements = append(allElements, elements...)
-	return f.CreateFrame(allElements...)
+	frameHTML := f.CreateFrame(allElements...)
+
+	// Post-process <img> tags in frameHTML, set width directly
+	imgRe := regexp.MustCompile(`<img\s+([^>]*alt="(img\+?|img-)"[^>]*)>`)
+	processed := imgRe.ReplaceAllStringFunc(string(frameHTML), func(imgTag string) string {
+		altRe := regexp.MustCompile(`alt="([^"]*)"`)
+		alt := "img"
+		if m := altRe.FindStringSubmatch(imgTag); m != nil {
+			alt = m[1]
+		}
+		width := "50vw"
+		switch alt {
+		case "img+":
+			width = "75vw"
+		case "img-":
+			width = "25vw"
+		}
+		// Replace or add width attribute
+		widthRe := regexp.MustCompile(`width="[^"]*"`)
+		if widthRe.MatchString(imgTag) {
+			imgTag = widthRe.ReplaceAllString(imgTag, `width="`+width+`"`)
+		} else {
+			imgTag = imgTag[:len(imgTag)-1] + ` width="` + width + `" height="auto">`
+		}
+		return imgTag
+	})
+
+	return template.HTML(processed)
 }
 
+// ...existing code...
 func (f *Frame) FromMarkdown2(file string, elements ...template.HTML) template.HTML {
 	content, err := os.ReadFile(file)
 	if err != nil {
 		return template.HTML("")
 	}
-	md := string(content)
 
-	parts := img.FindAllStringIndex(md, -1)
-	result := make([]template.HTML, 0, len(parts)+len(elements)+1)
-	last := 0
-
-	for _, idx := range parts {
-		// Convert text before the image
-		if idx[0] > last {
-			section := md[last:idx[0]]
-			var buf bytes.Buffer
-			if err := (*f.Md).Convert([]byte(section), &buf); err == nil {
-				result = append(result, template.HTML(buf.String()))
-			}
-		}
-		// Handle the image itself
-		imgMatch := md[idx[0]:idx[1]]
-		m := img.FindStringSubmatch(imgMatch)
-		if len(m) == 3 {
-			alt, src := m[1], m[2]
-			result = append(result, f.Img(src, alt, "50vw"))
-		}
-		last = idx[1]
+	var buf bytes.Buffer
+	if err := (*f.Md).Convert(content, &buf); err != nil {
+		return template.HTML("")
 	}
-
-	// Convert any remaining text after the last image
-	if last < len(md) {
-		section := md[last:]
-		var buf bytes.Buffer
-		if err := (*f.Md).Convert([]byte(section), &buf); err == nil {
-			result = append(result, template.HTML(buf.String()))
-		}
-	}
-
-	// Add any extra elements
-	result = append(result, elements...)
-
-	// Join all sections and wrap in .text
-	final := `<div class="text">`
-	for _, r := range result {
-		final += string(r)
-	}
-	final += `</div>`
-
-	return f.CreateFrame(template.HTML(final))
+	wrapped := template.HTML(`<div class="text">` + buf.String() + `</div>`)
+	allElements := make([]template.HTML, 0, len(elements)+1)
+	allElements = append(allElements, wrapped)
+	allElements = append(allElements, elements...)
+	return f.CreateFrame(allElements...)
 }

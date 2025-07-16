@@ -4,21 +4,16 @@ import (
 	"bytes"
 	"html/template"
 	"net/http"
+	"os"
 	"strings"
 )
 
 type Pathless struct {
-	HTML  *template.HTML
-	Font  string
-	Color string
+	HTML *template.HTML
 }
 
-func NewPathless(color string) *Pathless {
-	pathless := &Pathless{
-		Font:  "'Roboto', sans-serif",
-		Color: color,
-	}
-	return pathless
+func NewPathless() *Pathless {
+	return &Pathless{}
 }
 
 func (p *Pathless) One(w http.ResponseWriter, r *http.Request) {
@@ -26,57 +21,19 @@ func (p *Pathless) One(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(*p.HTML))
 }
 
-func (p *Pathless) Zero(body template.HTML) {
+func (p *Pathless) Zero(body template.HTML, cssPath string) {
+	file, err := os.ReadFile(cssPath)
+	cssContent := template.CSS("")
+	if err == nil {
+		cssContent = template.CSS(file)
+	}
 	templateStr := `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>hello universe</title>
-    <style>
-        *, *::before, *::after {
-            box-sizing: border-box;
-            margin: 0;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            user-select: none;
-        }
-        *::-webkit-scrollbar { display: none; }
-        html, body {
-            color: white;
-            background-color: black;
-            height: 100vh;
-            width: 100vw;
-            font-family: ` + p.Font + `;
-            scroll-behavior: smooth;
-            overflow: hidden;
-        }
-        body {
-            border: medium solid ` + p.Color + `; 
-            border-radius: 0.3125em;
-            display: flex;
-        }
-        a,
-        a:hover,
-        a:visited,
-        a:active,
-        a:focus {
-            text-align: center;
-            color: inherit;
-            text-decoration: underline;
-        }
-        main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-        }
-        .text {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-    </style>
+    <style>{{.CSS}}</style>
 </head>
 <body><main>{{.Body}}</main></body>
 </html>`
@@ -84,7 +41,11 @@ func (p *Pathless) Zero(body template.HTML) {
 	tmpl := template.Must(template.New("page").Parse(templateStr))
 	var buf bytes.Buffer
 
-	data := struct{ Body template.HTML }{Body: body}
+	data := struct {
+		Body template.HTML
+		CSS  template.CSS
+	}{Body: body, CSS: cssContent}
+
 	if err := tmpl.Execute(&buf, data); err != nil {
 		result := template.HTML(strings.ReplaceAll(templateStr, "{{.Body}}", string(body)))
 		p.HTML = &result

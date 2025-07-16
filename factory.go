@@ -28,7 +28,7 @@ type Factory struct {
 	*mux.Router
 }
 
-func InitFactory(color string) *Factory {
+func InitFactory() *Factory {
 	ctx := context.Background()
 	mu := &sync.Mutex{}
 	when := sync.NewCond(mu)
@@ -40,16 +40,16 @@ func InitFactory(color string) *Factory {
 		RWMutex:  &sync.RWMutex{},
 		Fx:       fx,
 		Router:   fx.NewRouter(),
-		IO:       io.NewIO(ctx),
-		Pathless: pathless.NewPathless(color),
+		Pathless: pathless.NewPathless(),
 		Path:     path.NewPath(),
 		Frame:    frame.NewFrame(),
+		IO:       io.NewIO(ctx),
 	}
 	return factory
 }
 
-func (f *Factory) InitPathless(body template.HTML) {
-	f.Zero(body)
+func (f *Factory) InitPathless(body template.HTML, cssPath string) {
+	f.Zero(body, cssPath)
 	f.HandleFunc("/", f.One).Methods("GET")
 	go func() {
 		log.Println("Starting pathless on :1001")

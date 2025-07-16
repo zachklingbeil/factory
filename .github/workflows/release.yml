@@ -18,7 +18,7 @@ jobs:
               uses: mathieudutour/github-tag-action@v6.1
               with:
                   github_token: ${{ secrets.GITHUB_TOKEN }}
-                  default_bump: minor # or patch/major as you prefer
+                  default_bump: patch # major *.0.0 minor 0.*.0 patch 0.0.*
 
             - name: Create GitHub Release
               uses: softprops/action-gh-release@v2

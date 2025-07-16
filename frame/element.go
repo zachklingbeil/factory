@@ -114,7 +114,7 @@ func initGoldmark() *goldmark.Markdown {
 		),
 		goldmark.WithRendererOptions(
 			yhtml.WithHardWraps(),
-			yhtml.WithXHTML(),
+			// yhtml.WithXHTML(),
 		),
 	)
 	return &md

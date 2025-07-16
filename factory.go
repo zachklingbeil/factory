@@ -70,5 +70,7 @@ func (f *Factory) AddConstant(dir string) {
 func (f *Factory) AddText(file string, elements ...template.HTML) template.HTML {
 	f.Mutex.Lock()
 	defer f.Mutex.Unlock()
-	return f.FromMarkdown(file, elements...)
+	markdown := f.FromMarkdown(file, elements...)
+	wrapped := template.HTML(`<div class="text">` + string(markdown) + `</div>`)
+	return wrapped
 }

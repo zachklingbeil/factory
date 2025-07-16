@@ -47,8 +47,8 @@ func (f *Frame) FromMarkdown(file string, elements ...template.HTML) template.HT
 		return ""
 	}
 
-	wrapped := template.HTML(`<div class="text">` + buf.String() + `</div>`)
-	all := append([]template.HTML{wrapped}, elements...)
+	markdownHTML := template.HTML(buf.String())
+	all := append([]template.HTML{markdownHTML}, elements...)
 	frameHTML := f.CreateFrame(all...)
 
 	processed := imageRe.ReplaceAllStringFunc(string(frameHTML), func(imgTag string) string {

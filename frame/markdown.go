@@ -54,19 +54,19 @@ func (f *Frame) FromMarkdown(file string, elements ...template.HTML) template.HT
 		if m := altRe.FindStringSubmatch(imgTag); m != nil {
 			alt = m[1]
 		}
-		class := "image"
+		style := "width:50vw;display:block;margin:0 auto;"
 		switch alt {
 		case "img+":
-			class = "image-large"
+			style = "width:75vw;display:block;margin:0 auto;"
 		case "img-":
-			class = "image-small"
+			style = "width:25vw;display:block;margin:0 auto;"
 		}
-		// Replace or add class attribute
-		classRe := regexp.MustCompile(`class="[^"]*"`)
-		if classRe.MatchString(imgTag) {
-			imgTag = classRe.ReplaceAllString(imgTag, `class="`+class+`"`)
+		// Replace or add style attribute
+		styleRe := regexp.MustCompile(`style="[^"]*"`)
+		if styleRe.MatchString(imgTag) {
+			imgTag = styleRe.ReplaceAllString(imgTag, `style="`+style+`"`)
 		} else {
-			imgTag = imgTag[:len(imgTag)-1] + ` class="` + class + `">`
+			imgTag = imgTag[:len(imgTag)-1] + ` style="` + style + `">`
 		}
 		return imgTag
 	})

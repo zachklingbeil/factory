@@ -71,6 +71,5 @@ func (f *Factory) AddText(file string, elements ...template.HTML) template.HTML 
 	f.Mutex.Lock()
 	defer f.Mutex.Unlock()
 	markdown := f.FromMarkdown(file, elements...)
-	wrapped := template.HTML(`<div class="text">` + string(markdown) + `</div>`)
-	return wrapped
+	return markdown
 }

@@ -28,6 +28,21 @@ func (f *Frame) CreateFrame(elements ...template.HTML) template.HTML {
 	return template.HTML(builder.String())
 }
 
+func (f *Frame) WrapFrame(divClass string, elements ...template.HTML) template.HTML {
+	if len(elements) == 0 {
+		return template.HTML("")
+	}
+	var builder strings.Builder
+	for _, element := range elements {
+		builder.WriteString(string(element))
+	}
+	result := builder.String()
+	if divClass != "" {
+		result = `<div class="` + divClass + `">` + result + `</div>`
+	}
+	return template.HTML(result)
+}
+
 func (f *Frame) AddCSS(styles map[string]string) template.HTML {
 	var builder strings.Builder
 	builder.WriteString("<style>")

@@ -35,7 +35,9 @@ func (p *Pathless) Zero(body template.HTML, cssPath string) {
     <title>hello universe</title>
     <style>{{.CSS}}</style>
 </head>
-<body>{{.Body}}</body>
+<body>
+    <div id="frame">{{.Body}}</div>
+</body>
 </html>`
 
 	tmpl := template.Must(template.New("page").Parse(templateStr))

@@ -1,4 +1,4 @@
-name: Bump and release
+name: bump
 
 on:
     push:

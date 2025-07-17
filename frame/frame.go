@@ -8,27 +8,35 @@ import (
 )
 
 type Frame struct {
-	Md *goldmark.Markdown
+	Md        *goldmark.Markdown
+	Keybinds  map[string]string
+	Templates []*template.HTML
 }
 
 func NewFrame() *Frame {
 	return &Frame{
-		Md: initGoldmark(),
+		Md:       initGoldmark(),
+		Keybinds: make(map[string]string),
 	}
 }
 
-func (f *Frame) CreateFrame(elements ...template.HTML) template.HTML {
-	if len(elements) == 0 {
-		return template.HTML("")
-	}
-	var builder strings.Builder
-	for _, element := range elements {
-		builder.WriteString(string(element))
-	}
-	return template.HTML(builder.String())
+// Add or update a keybind
+func (f *Frame) SetKeybind(key, action string) {
+	f.Keybinds[key] = action
 }
 
-func (f *Frame) WrapFrame(divClass string, elements ...template.HTML) template.HTML {
+// Retrieve an action for a keybind
+func (f *Frame) GetKeybind(key string) (string, bool) {
+	action, exists := f.Keybinds[key]
+	return action, exists
+}
+
+// Remove a keybind
+func (f *Frame) RemoveKeybind(key string) {
+	delete(f.Keybinds, key)
+}
+
+func (f *Frame) CreateFrame(reference string, elements ...template.HTML) template.HTML {
 	if len(elements) == 0 {
 		return template.HTML("")
 	}
@@ -37,8 +45,8 @@ func (f *Frame) WrapFrame(divClass string, elements ...template.HTML) template.H
 		builder.WriteString(string(element))
 	}
 	result := builder.String()
-	if divClass != "" {
-		result = `<div class="` + divClass + `">` + result + `</div>`
+	if reference != "" {
+		result = `<div class="` + reference + `">` + result + `</div>`
 	}
 	return template.HTML(result)
 }
@@ -62,4 +70,20 @@ func (f *Frame) AddJS(js string) template.HTML {
 	builder.WriteString(js)
 	builder.WriteString("</script>")
 	return template.HTML(builder.String())
+}
+
+// AddKeybindJS generates and injects JavaScript for all keybinds in the Frame's Keybinds map.
+func (f *Frame) AddKeybindJS() template.HTML {
+	var builder strings.Builder
+	builder.WriteString("document.addEventListener('keydown',function(event){")
+	builder.WriteString("if(event.target.tagName==='INPUT'||event.target.tagName==='TEXTAREA'){return;}")
+	for key, action := range f.Keybinds {
+		builder.WriteString("if(event.key==='")
+		builder.WriteString(key)
+		builder.WriteString("'){event.preventDefault();")
+		builder.WriteString(action)
+		builder.WriteString("}")
+	}
+	builder.WriteString("});")
+	return f.AddJS(builder.String())
 }

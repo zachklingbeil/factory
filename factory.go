@@ -45,6 +45,7 @@ func InitFactory() *Factory {
 		Frame:    frame.NewFrame(),
 		IO:       io.NewIO(ctx),
 	}
+
 	return factory
 }
 

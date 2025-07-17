@@ -20,7 +20,7 @@ func NewFrame() *Frame {
 	return frame
 }
 
-func (f *Frame) CreateFrame(reference string, elements ...template.HTML) template.HTML {
+func (f *Frame) AddFrame(reference string, elements ...template.HTML) template.HTML {
 	if len(elements) == 0 {
 		return template.HTML("")
 	}

@@ -33,6 +33,7 @@ func InitFactory() *Factory {
 	mu := &sync.Mutex{}
 	when := sync.NewCond(mu)
 	fx := fx.InitFx(ctx)
+	driver := fx.NewRouter()
 	factory := &Factory{
 		Ctx:      ctx,
 		Mutex:    mu,
@@ -42,7 +43,7 @@ func InitFactory() *Factory {
 		Router:   fx.NewRouter(),
 		Pathless: pathless.NewPathless(),
 		Path:     path.NewPath(),
-		Frame:    frame.NewFrame(),
+		Frame:    frame.NewFrame(driver),
 		IO:       io.NewIO(ctx),
 	}
 	return factory

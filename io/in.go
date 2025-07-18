@@ -10,14 +10,14 @@ import (
 
 type IO struct {
 	Http *http.Client
-	Ctx  context.Context
+	ctx  context.Context
 }
 
 // NewJson creates a new IO instance with a default Http client and context
 func NewIO(ctx context.Context) *IO {
 	return &IO{
 		Http: &http.Client{},
-		Ctx:  ctx,
+		ctx:  ctx,
 	}
 }
 
@@ -44,7 +44,7 @@ func (i *IO) createRequest(endpoint string) (*http.Request, error) {
 		return nil, fmt.Errorf("failed to parse URL %s: %w", endpoint, err)
 	}
 
-	req, err := http.NewRequestWithContext(i.Ctx, "GET", parsedURL.String(), nil)
+	req, err := http.NewRequestWithContext(i.ctx, "GET", parsedURL.String(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GET request for URL %s: %w", parsedURL.String(), err)
 	}

@@ -6,11 +6,11 @@ import (
 	"os"
 	"regexp"
 
-	mathjax "github.com/litao91/goldmark-mathjax"
+	math "github.com/litao91/goldmark-mathjax"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
-	gold "github.com/yuin/goldmark/renderer/html"
+	h "github.com/yuin/goldmark/renderer/html"
 )
 
 var (
@@ -21,7 +21,7 @@ var (
 
 func initGoldmark() *goldmark.Markdown {
 	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM, mathjax.MathJax),
+		goldmark.WithExtensions(extension.GFM, math.MathJax),
 		goldmark.WithParserOptions(
 			parser.WithAutoHeadingID(),
 			parser.WithAttribute(),
@@ -29,8 +29,8 @@ func initGoldmark() *goldmark.Markdown {
 			parser.WithInlineParsers(),
 		),
 		goldmark.WithRendererOptions(
-			gold.WithHardWraps(),
-			gold.WithXHTML(),
+			h.WithHardWraps(),
+			h.WithXHTML(),
 		),
 	)
 	return &md
@@ -51,7 +51,7 @@ func (f *Frame) FromMarkdown(file string, elements ...template.HTML) template.HT
 	all := append([]template.HTML{markdownHTML}, elements...)
 	frameHTML := f.AddFrame("text", all...)
 
-	processed := imageRe.ReplaceAllStringFunc(string(frameHTML), func(imgTag string) string {
+	processed := imageRe.ReplaceAllStringFunc(string(*frameHTML), func(imgTag string) string {
 		alt := "img"
 		if m := altRe.FindStringSubmatch(imgTag); m != nil {
 			alt = m[1]
@@ -68,6 +68,5 @@ func (f *Frame) FromMarkdown(file string, elements ...template.HTML) template.HT
 		}
 		return imgTag[:len(imgTag)-1] + ` style="` + style + `">`
 	})
-
 	return template.HTML(processed)
 }

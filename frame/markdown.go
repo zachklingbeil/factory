@@ -36,23 +36,21 @@ func initGoldmark() *goldmark.Markdown {
 	return &md
 }
 
-func (f *Frame) FromMarkdown(file string, elements ...template.HTML) template.HTML {
+func (f *Frame) AddText(file string, elements ...template.HTML) {
 	content, err := os.ReadFile(file)
 	if err != nil {
-		return ""
+		return
 	}
 
 	var buf bytes.Buffer
 	if err := (*f.Md).Convert(content, &buf); err != nil {
-		return ""
+		return
 	}
 
 	markdownHTML := template.HTML(buf.String())
 	all := append([]template.HTML{markdownHTML}, elements...)
-	all = append(all, *f.AddScrollKeybinds()) // Add scroll keybinds
 
-	frameHTML := f.AddFrame("text", all...)
-	processed := imageRe.ReplaceAllStringFunc(string(*frameHTML), func(imgTag string) string {
+	processed := imageRe.ReplaceAllStringFunc(string(markdownHTML), func(imgTag string) string {
 		alt := "img"
 		if m := altRe.FindStringSubmatch(imgTag); m != nil {
 			alt = m[1]
@@ -69,5 +67,24 @@ func (f *Frame) FromMarkdown(file string, elements ...template.HTML) template.HT
 		}
 		return imgTag[:len(imgTag)-1] + ` style="` + style + `">`
 	})
-	return template.HTML(processed)
+
+	all[0] = template.HTML(processed)
+	all = append(all, *f.AddScrollKeybinds()) // Add scroll keybinds at the end
+
+	f.AddFrame(all...) // Only call AddFrame, no return
+}
+
+func (f *Frame) AddScrollKeybinds() *template.HTML {
+	return f.AddJS(
+		`document.addEventListener('keydown', function(event) {
+            const c = document.getElementById('frame');
+            if (!c) return;
+            if (event.key === 'w') {
+                c.scrollBy({ top: -100, behavior: 'smooth' });
+            }
+            if (event.key === 's') {
+                c.scrollBy({ top: 100, behavior: 'smooth' });
+            }
+        });`,
+	)
 }

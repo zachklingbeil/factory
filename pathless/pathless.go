@@ -16,11 +16,6 @@ func NewPathless() *Pathless {
 	return &Pathless{}
 }
 
-func (p *Pathless) One(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(*p.HTML))
-}
-
 func (p *Pathless) Zero(body template.HTML, cssPath string) {
 	file, err := os.ReadFile(cssPath)
 	cssContent := template.CSS("")
@@ -46,7 +41,8 @@ func (p *Pathless) Zero(body template.HTML, cssPath string) {
 	data := struct {
 		Body template.HTML
 		CSS  template.CSS
-	}{Body: body, CSS: cssContent}
+		Nav  template.JS
+	}{Body: body, CSS: cssContent, Nav: p.Nav()}
 
 	if err := tmpl.Execute(&buf, data); err != nil {
 		result := template.HTML(strings.ReplaceAll(templateStr, "{{.Body}}", string(body)))
@@ -55,4 +51,29 @@ func (p *Pathless) Zero(body template.HTML, cssPath string) {
 	}
 	result := template.HTML(buf.String())
 	p.HTML = &result
+}
+
+func (p *Pathless) Nav() template.JS {
+	return template.JS(`
+let frameIdx = 0;
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'q') frameIdx--;
+    if (event.key === 'e') frameIdx++;
+    if (event.key === 'q' || event.key === 'e') {
+        fetch('/frame', {
+            headers: { 'X': frameIdx }
+        })
+        .then(r => r.text())
+        .then(html => {
+            const c = document.getElementById('frame');
+            if (c) c.innerHTML = html;
+        });
+    }
+});
+`)
+}
+
+func (p *Pathless) One(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(*p.HTML))
 }

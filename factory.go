@@ -2,9 +2,6 @@ package factory
 
 import (
 	"context"
-	"html/template"
-	"log"
-	"net/http"
 	"sync"
 
 	"github.com/gorilla/mux"
@@ -58,61 +55,4 @@ func InitFactory() *Factory {
 		Map:    make(map[string]*any),
 	}
 	return factory
-}
-
-// SetMapValue sets a value in the Factory's Map.
-func (f *Factory) Input(key string, value any) {
-	f.RWMutex.Lock()
-	defer f.RWMutex.Unlock()
-	f.Map[key] = &value
-}
-
-// GetMapValue retrieves a value from the Factory's Map.
-func (f *Factory) Output(key string) (any, bool) {
-	f.RWMutex.RLock()
-	defer f.RWMutex.RUnlock()
-	valPtr, ok := f.Map[key]
-	if !ok || valPtr == nil {
-		return nil, false
-	}
-	return *valPtr, true
-}
-
-// Register endpoint template and route
-func (f *Factory) RegisterFrameRoutes() {
-	for path, tmpl := range f.Map {
-		f.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
-			if htmlTmpl, ok := (*tmpl).(*template.HTML); ok {
-				f.WriteResponse(w, htmlTmpl)
-			} else {
-				f.WriteResponse(w, nil)
-			}
-		})
-	}
-}
-
-// Write HTML response
-func (f *Factory) WriteResponse(w http.ResponseWriter, tmpl *template.HTML) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if tmpl != nil {
-		w.Write([]byte(string(*tmpl)))
-	} else {
-		w.Write([]byte("<div>404 Not Found</div>"))
-	}
-}
-
-func (f *Factory) InitPathless(body template.HTML, cssPath string) {
-	f.Zero(body, cssPath)
-	f.HandleFunc("/", f.One).Methods("GET")
-	go func() {
-		log.Println("Starting pathless on :1001")
-		http.ListenAndServe(":1001", f.Router)
-	}()
-}
-
-func (f *Factory) AddText(file string, elements ...template.HTML) template.HTML {
-	f.Mutex.Lock()
-	defer f.Mutex.Unlock()
-	markdown := f.FromMarkdown(file, elements...)
-	return markdown
 }

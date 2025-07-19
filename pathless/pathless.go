@@ -29,6 +29,7 @@ func (p *Pathless) Zero(body template.HTML, cssPath string) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>hello universe</title>
     <style>{{.CSS}}</style>
+    <script>{{.Nav}}</script>
 </head>
 <body>
     <div id="frame">{{.Body}}</div>
@@ -41,8 +42,8 @@ func (p *Pathless) Zero(body template.HTML, cssPath string) {
 	data := struct {
 		Body template.HTML
 		CSS  template.CSS
-		Nav  template.HTML
-	}{Body: body, CSS: cssContent, Nav: p.Nav()}
+		Nav  template.JS
+	}{Body: body, CSS: cssContent, Nav: p.NavJS()}
 
 	if err := tmpl.Execute(&buf, data); err != nil {
 		result := template.HTML(strings.ReplaceAll(templateStr, "{{.Body}}", string(body)))
@@ -53,25 +54,25 @@ func (p *Pathless) Zero(body template.HTML, cssPath string) {
 	p.HTML = &result
 }
 
-func (p *Pathless) Nav() template.HTML {
-	return template.HTML(`
-<script>
-let frameIdx = 0;
-document.addEventListener('keydown', function(event) {
-    if (event.key === 'q') frameIdx--;
-    if (event.key === 'e') frameIdx++;
-    if (event.key === 'q' || event.key === 'e') {
-        fetch('/frame', {
-            headers: { 'X': frameIdx }
-        })
-        .then(r => r.text())
-        .then(html => {
-            const c = document.getElementById('frame');
-            if (c) c.innerHTML = html;
-        });
-    }
+func (p *Pathless) NavJS() template.JS {
+	return template.JS(`
+document.addEventListener('DOMContentLoaded', function() {
+    let frameIdx = 0;
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'q') frameIdx--;
+        if (event.key === 'e') frameIdx++;
+        if (event.key === 'q' || event.key === 'e') {
+            fetch('/frame', {
+                headers: { 'X': frameIdx }
+            })
+            .then(r => r.text())
+            .then(html => {
+                const c = document.getElementById('frame');
+                if (c) c.innerHTML = html;
+            });
+        }
+    });
 });
-</script>
 `)
 }
 func (p *Pathless) One(w http.ResponseWriter, r *http.Request) {

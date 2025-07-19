@@ -29,6 +29,7 @@ func (p *Pathless) Zero(body template.HTML, cssPath string) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>hello universe</title>
     <style>{{.CSS}}</style>
+    {{.Nav}}
 </head>
 <body>
     <div id="frame">{{.Body}}</div>

@@ -11,8 +11,9 @@ import (
 )
 
 type Frame struct {
-	Md    *goldmark.Markdown
-	Index []*template.HTML
+	Md       *goldmark.Markdown
+	Pathless *template.HTML
+	Index    []*template.HTML
 	*mux.Router
 }
 
@@ -22,7 +23,7 @@ func NewFrame(mux *mux.Router) *Frame {
 		Index:  make([]*template.HTML, 0),
 		Router: mux,
 	}
-	frame.HandleFunc("/frame", frame.FrameHandler())
+	frame.HandleFunc("/frame/{.index}", frame.FrameHandler())
 	return frame
 }
 

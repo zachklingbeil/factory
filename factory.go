@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/gorilla/mux"
+	"github.com/zachklingbeil/factory/element"
 	"github.com/zachklingbeil/factory/frame"
 	"github.com/zachklingbeil/factory/fx"
 	"github.com/zachklingbeil/factory/io"
@@ -32,6 +33,7 @@ type Lines struct {
 	*frame.Frame
 	*pathless.Pathless
 	*path.Path
+	*element.Element
 }
 
 func InitFactory() *Factory {
@@ -49,10 +51,12 @@ func InitFactory() *Factory {
 			Frame:    frame.NewFrame(driver),
 			Pathless: pathless.NewPathless(),
 			Path:     path.NewPath(),
+			Element:  &element.Element{},
 		},
 		Motion: &Motion{Mutex: mu, RWMutex: &sync.RWMutex{}, Cond: when},
 		Router: fx.NewRouter(),
 		Map:    make(map[string]*any),
 	}
+
 	return factory
 }

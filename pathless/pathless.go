@@ -29,7 +29,6 @@ func (p *Pathless) Zero(body template.HTML, cssPath string) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>hello universe</title>
     <style>{{.CSS}}</style>
-    {{.Nav}}
 </head>
 <body>
     <div id="frame">{{.Body}}</div>
@@ -42,7 +41,7 @@ func (p *Pathless) Zero(body template.HTML, cssPath string) {
 	data := struct {
 		Body template.HTML
 		CSS  template.CSS
-		Nav  template.JS
+		Nav  template.HTML
 	}{Body: body, CSS: cssContent, Nav: p.Nav()}
 
 	if err := tmpl.Execute(&buf, data); err != nil {
@@ -54,8 +53,9 @@ func (p *Pathless) Zero(body template.HTML, cssPath string) {
 	p.HTML = &result
 }
 
-func (p *Pathless) Nav() template.JS {
-	return template.JS(`
+func (p *Pathless) Nav() template.HTML {
+	return template.HTML(`
+<script>
 let frameIdx = 0;
 document.addEventListener('keydown', function(event) {
     if (event.key === 'q') frameIdx--;
@@ -71,9 +71,9 @@ document.addEventListener('keydown', function(event) {
         });
     }
 });
+</script>
 `)
 }
-
 func (p *Pathless) One(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	w.Write([]byte(*p.HTML))

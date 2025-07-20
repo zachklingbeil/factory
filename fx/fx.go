@@ -15,16 +15,19 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/zachklingbeil/factory/fx/io"
 	"golang.org/x/oauth2/clientcredentials"
 )
 
 type Fx struct {
+	*io.IO
 	ctx context.Context
 }
 
 func InitFx(ctx context.Context) *Fx {
 	return &Fx{
 		ctx: ctx,
+		IO:  io.NewIO(ctx),
 	}
 }
 

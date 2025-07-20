@@ -29,7 +29,7 @@ func (p *Pathless) Zero(body template.HTML, cssPath string) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>hello universe</title>
     <style>{{.CSS}}</style>
-    <script>{{.Nav}}</script>
+    <script>{{.Script}}</script>
 </head>
 <body>
     <div id="frame">{{.Body}}</div>
@@ -40,10 +40,10 @@ func (p *Pathless) Zero(body template.HTML, cssPath string) {
 	var buf bytes.Buffer
 
 	data := struct {
-		Body template.HTML
-		CSS  template.CSS
-		Nav  template.JS
-	}{Body: body, CSS: cssContent, Nav: p.NavJS()}
+		Body   template.HTML
+		CSS    template.CSS
+		Script template.JS
+	}{Body: body, CSS: cssContent, Script: p.NavJS()}
 
 	if err := tmpl.Execute(&buf, data); err != nil {
 		result := template.HTML(strings.ReplaceAll(templateStr, "{{.Body}}", string(body)))

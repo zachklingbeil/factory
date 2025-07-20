@@ -5,11 +5,10 @@ import (
 	"sync"
 
 	"github.com/gorilla/mux"
-	"github.com/zachklingbeil/factory/frame"
 	"github.com/zachklingbeil/factory/fx"
-	"github.com/zachklingbeil/factory/io"
-	"github.com/zachklingbeil/factory/path"
-	"github.com/zachklingbeil/factory/pathless"
+	"github.com/zachklingbeil/factory/zero/frame"
+	"github.com/zachklingbeil/factory/zero/path"
+	"github.com/zachklingbeil/factory/zero/pathless"
 )
 
 type Factory struct {
@@ -27,7 +26,6 @@ type Motion struct {
 }
 
 type Lines struct {
-	*io.IO
 	*fx.Fx
 	*frame.Frame
 	*pathless.Pathless
@@ -44,7 +42,6 @@ func InitFactory() *Factory {
 	factory := &Factory{
 		Ctx: ctx,
 		Lines: &Lines{
-			IO:       io.NewIO(ctx),
 			Fx:       fx,
 			Frame:    frame.NewFrame(driver),
 			Pathless: pathless.NewPathless(),

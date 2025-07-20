@@ -3,180 +3,129 @@ package element
 import (
 	"fmt"
 	"html"
-	"html/template"
-	"strings"
 )
 
-type Element struct {
-	HTML template.HTML
-}
-
-type One interface {
-	Render() template.HTML
-}
-
-func (e *Element) Render() template.HTML {
-	return e.HTML
-}
-func NewElement(htmlStr string) *Element {
-	return &Element{HTML: template.HTML(htmlStr)}
-}
-
-func (e *Element) BuildFrame(keys []One) template.HTML {
-	body := simplify(keys)
-	return template.HTML(body)
-}
-
-func (e *Element) WrapFrame(value string, keys []One) template.HTML {
-	body := e.BuildFrame(keys)
-	frame := fmt.Sprintf(`<div class="%s">%s</div>`, html.EscapeString(value), body)
-	return template.HTML(frame)
-}
-
-func simplify(keys []One) string {
-	var stylesBuilder, scriptsBuilder, htmlBuilder strings.Builder
-
-	for _, item := range keys {
-		s := string(item.Render())
-		for {
-			start, end := strings.Index(s, "<style>"), strings.Index(s, "</style>")
-			if start < 0 || end <= start {
-				break
-			}
-			stylesBuilder.WriteString(s[start+len("<style>") : end])
-			s = s[:start] + s[end+len("</style>"):]
-		}
-		for {
-			start, end := strings.Index(s, "<script>"), strings.Index(s, "</script>")
-			if start < 0 || end <= start {
-				break
-			}
-			scriptsBuilder.WriteString(s[start+len("<script>") : end])
-			s = s[:start] + s[end+len("</script>"):]
-		}
-		htmlBuilder.WriteString(s)
-	}
-
-	var resultBuilder strings.Builder
-	if stylesBuilder.Len() > 0 {
-		resultBuilder.WriteString("<style>")
-		resultBuilder.WriteString(stylesBuilder.String())
-		resultBuilder.WriteString("</style>")
-	}
-	if scriptsBuilder.Len() > 0 {
-		resultBuilder.WriteString("<script>")
-		resultBuilder.WriteString(scriptsBuilder.String())
-		resultBuilder.WriteString("</script>")
-	}
-	resultBuilder.WriteString(htmlBuilder.String())
-	return resultBuilder.String()
-}
-
 // --- Generic tag builders ---
-func Tag(tag, text string) string {
+func (z *Zero) Tag(tag, text string) *Element {
 	escaped := html.EscapeString(text)
-	return fmt.Sprintf("<%s>%s</%s>", tag, escaped, tag)
+	return NewElement(fmt.Sprintf("<%s>%s</%s>", tag, escaped, tag))
 }
-func ClosedTag(tag string, attrs map[string]string) string {
+
+func (z *Zero) ClosedTag(tag string, attrs map[string]string) *Element {
 	attrStr := ""
 	for k, v := range attrs {
 		attrStr += fmt.Sprintf(` %s="%s"`, k, html.EscapeString(v))
 	}
-	return fmt.Sprintf("<%s%s>", tag, attrStr)
+	return NewElement(fmt.Sprintf("<%s%s>", tag, attrStr))
 }
-func (e *Element) Div(value string) *Element {
+
+func (z *Zero) Div(value string) *Element {
 	return NewElement(fmt.Sprintf(`<div class="%s"></div>`, html.EscapeString(value)))
 }
 
-func (e *Element) JS(js string) *Element {
+func (z *Zero) JS(js string) *Element {
 	script := fmt.Sprintf("<script>%s</script>", js)
-	return NewElement(string(e.HTML) + script)
+	return NewElement(script)
 }
 
-func (e *Element) CSS(css string) *Element {
+func (z *Zero) CSS(css string) *Element {
 	style := fmt.Sprintf("<style>%s</style>", css)
-	return NewElement(string(e.HTML) + style)
+	return NewElement(style)
 }
 
 // Instance methods for Element
-func (e *Element) H1(s string) *Element        { return NewElement(Tag("h1", s)) }
-func (e *Element) H2(s string) *Element        { return NewElement(Tag("h2", s)) }
-func (e *Element) H3(s string) *Element        { return NewElement(Tag("h3", s)) }
-func (e *Element) H4(s string) *Element        { return NewElement(Tag("h4", s)) }
-func (e *Element) H5(s string) *Element        { return NewElement(Tag("h5", s)) }
-func (e *Element) H6(s string) *Element        { return NewElement(Tag("h6", s)) }
-func (e *Element) Paragraph(s string) *Element { return NewElement(Tag("p", s)) }
-func (e *Element) Span(s string) *Element      { return NewElement(Tag("span", s)) }
-func (e *Element) Link(href, text string) *Element {
-	return NewElement(fmt.Sprintf(`<a href="%s">%s</a>`, html.EscapeString(href), html.EscapeString(text)))
+func (z *Zero) H1(s string) *Element        { return z.Tag("h1", s) }
+func (z *Zero) H2(s string) *Element        { return z.Tag("h2", s) }
+func (z *Zero) H3(s string) *Element        { return z.Tag("h3", s) }
+func (z *Zero) H4(s string) *Element        { return z.Tag("h4", s) }
+func (z *Zero) H5(s string) *Element        { return z.Tag("h5", s) }
+func (z *Zero) H6(s string) *Element        { return z.Tag("h6", s) }
+func (z *Zero) Paragraph(s string) *Element { return z.Tag("p", s) }
+func (z *Zero) Span(s string) *Element      { return z.Tag("span", s) }
+func (z *Zero) Link(href, text string) *Element {
+	attrStr := fmt.Sprintf(` href="%s"`, html.EscapeString(href))
+	return NewElement(fmt.Sprintf("<a%s>%s</a>", attrStr, html.EscapeString(text)))
 }
-func (e *Element) List(keys []any, ordered bool) *Element {
+
+func (z *Zero) List(keys []any, ordered bool) *Element {
 	tag := "ul"
 	if ordered {
 		tag = "ol"
 	}
 	list := ""
 	for _, item := range keys {
-		list += Tag("li", fmt.Sprint(item))
+		list += string(z.Tag("li", fmt.Sprint(item)).HTML)
 	}
 	return NewElement(fmt.Sprintf("<%s>%s</%s>", tag, list, tag))
 }
-func (e *Element) Img(src, alt, reference string) *Element {
-	img := ClosedTag("img", map[string]string{"src": src, "alt": alt})
+
+func (z *Zero) Img(src, alt, reference string) *Element {
+	img := string(z.ClosedTag("img", map[string]string{"src": src, "alt": alt}).HTML)
 	if reference != "" {
-		return NewElement(`<div class="` + reference + `">` + img + `</div>`)
+		return NewElement(fmt.Sprintf(`<div class="%s">%s</div>`, html.EscapeString(reference), img))
 	}
 	return NewElement(img)
 }
-func (e *Element) Video(src string) *Element {
+
+func (z *Zero) Video(src string) *Element {
 	return NewElement(fmt.Sprintf(`<video controls src="%s"></video>`, html.EscapeString(src)))
 }
-func (e *Element) Audio(src string) *Element {
+
+func (z *Zero) Audio(src string) *Element {
 	return NewElement(fmt.Sprintf(`<audio controls src="%s"></audio>`, html.EscapeString(src)))
 }
-func (e *Element) Iframe(src string) *Element {
+
+func (z *Zero) Iframe(src string) *Element {
 	return NewElement(fmt.Sprintf(`<iframe src="%s"></iframe>`, html.EscapeString(src)))
 }
-func (e *Element) Embed(src string) *Element {
-	return NewElement(ClosedTag("embed", map[string]string{"src": src}))
+
+func (z *Zero) Embed(src string) *Element {
+	return z.ClosedTag("embed", map[string]string{"src": src})
 }
-func (e *Element) Source(src string) *Element {
-	return NewElement(ClosedTag("source", map[string]string{"src": src}))
+
+func (z *Zero) Source(src string) *Element {
+	return z.ClosedTag("source", map[string]string{"src": src})
 }
-func (e *Element) Canvas(id string) *Element {
+
+func (z *Zero) Canvas(id string) *Element {
 	return NewElement(fmt.Sprintf(`<canvas id="%s"></canvas>`, html.EscapeString(id)))
 }
-func (e *Element) Nav(attrs map[string]string) *Element {
-	return NewElement(ClosedTag("nav", attrs))
+
+func (z *Zero) Nav(attrs map[string]string) *Element {
+	return z.ClosedTag("nav", attrs)
 }
-func (e *Element) Button(label string) *Element {
-	return NewElement(Tag("button", label))
+
+func (z *Zero) Button(label string) *Element {
+	return z.Tag("button", label)
 }
-func (e *Element) Code(code string) *Element {
-	return NewElement(Tag("code", code))
+
+func (z *Zero) Code(code string) *Element {
+	return z.Tag("code", code)
 }
-func (e *Element) Table(cols uint8, rows uint64, data [][]string) *Element {
+
+func (z *Zero) Table(cols uint8, rows uint64, data [][]string) *Element {
 	table := "<table>"
 	for _, row := range data {
 		table += "<tr>"
 		for _, cell := range row {
-			table += Tag("td", cell)
+			table += string(z.Tag("td", cell).HTML)
 		}
 		table += "</tr>"
 	}
 	table += "</table>"
 	return NewElement(table)
 }
-func (e *Element) Strong(s string) *Element  { return NewElement(Tag("strong", s)) }
-func (e *Element) Em(s string) *Element      { return NewElement(Tag("em", s)) }
-func (e *Element) Small(s string) *Element   { return NewElement(Tag("small", s)) }
-func (e *Element) Mark(s string) *Element    { return NewElement(Tag("mark", s)) }
-func (e *Element) Del(s string) *Element     { return NewElement(Tag("del", s)) }
-func (e *Element) Ins(s string) *Element     { return NewElement(Tag("ins", s)) }
-func (e *Element) Sub(s string) *Element     { return NewElement(Tag("sub", s)) }
-func (e *Element) Sup(s string) *Element     { return NewElement(Tag("sup", s)) }
-func (e *Element) Kbd(s string) *Element     { return NewElement(Tag("kbd", s)) }
-func (e *Element) Samp(s string) *Element    { return NewElement(Tag("samp", s)) }
-func (e *Element) VarElem(s string) *Element { return NewElement(Tag("var", s)) }
-func (e *Element) Abbr(s string) *Element    { return NewElement(Tag("abbr", s)) }
-func (e *Element) Time(s string) *Element    { return NewElement(Tag("time", s)) }
+
+func (z *Zero) Strong(s string) *Element  { return z.Tag("strong", s) }
+func (z *Zero) Em(s string) *Element      { return z.Tag("em", s) }
+func (z *Zero) Small(s string) *Element   { return z.Tag("small", s) }
+func (z *Zero) Mark(s string) *Element    { return z.Tag("mark", s) }
+func (z *Zero) Del(s string) *Element     { return z.Tag("del", s) }
+func (z *Zero) Ins(s string) *Element     { return z.Tag("ins", s) }
+func (z *Zero) Sub(s string) *Element     { return z.Tag("sub", s) }
+func (z *Zero) Sup(s string) *Element     { return z.Tag("sup", s) }
+func (z *Zero) Kbd(s string) *Element     { return z.Tag("kbd", s) }
+func (z *Zero) Samp(s string) *Element    { return z.Tag("samp", s) }
+func (z *Zero) VarElem(s string) *Element { return z.Tag("var", s) }
+func (z *Zero) Abbr(s string) *Element    { return z.Tag("abbr", s) }
+func (z *Zero) Time(s string) *Element    { return z.Tag("time", s) }

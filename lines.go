@@ -1,13 +1,12 @@
 package factory
 
 import (
-	"html/template"
 	"log"
 	"net/http"
 )
 
-func (f *Factory) InitPathless(body template.HTML, cssPath string) {
-	f.Zero(body, cssPath)
+func (f *Factory) InitPathless(cssPath, scriptPath string) {
+	f.SetPathless(cssPath, scriptPath)
 	f.HandleFunc("/", f.One).Methods("GET")
 	go func() {
 		log.Println("Starting pathless on :1001")

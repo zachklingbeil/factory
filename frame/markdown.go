@@ -1,9 +1,7 @@
 package frame
 
 import (
-	"bytes"
 	"html/template"
-	"os"
 	"regexp"
 
 	math "github.com/litao91/goldmark-mathjax"
@@ -36,43 +34,43 @@ func initGoldmark() *goldmark.Markdown {
 	return &md
 }
 
-func (f *Frame) AddText(file string, elements ...template.HTML) {
-	content, err := os.ReadFile(file)
-	if err != nil {
-		return
-	}
+// func (f *Frame) AddText(file string, elements ...template.HTML) {
+// 	content, err := os.ReadFile(file)
+// 	if err != nil {
+// 		return
+// 	}
 
-	var buf bytes.Buffer
-	if err := (*f.Md).Convert(content, &buf); err != nil {
-		return
-	}
+// 	var buf bytes.Buffer
+// 	if err := (*f.Md).Convert(content, &buf); err != nil {
+// 		return
+// 	}
 
-	markdownHTML := template.HTML(buf.String())
-	all := append([]template.HTML{markdownHTML}, elements...)
+// 	markdownHTML := template.HTML(buf.String())
+// 	all := append([]template.HTML{markdownHTML}, elements...)
 
-	processed := imageRe.ReplaceAllStringFunc(string(markdownHTML), func(imgTag string) string {
-		alt := "img"
-		if m := altRe.FindStringSubmatch(imgTag); m != nil {
-			alt = m[1]
-		}
-		style := "width:50vw;display:block;margin:0 auto;"
-		switch alt {
-		case "img+":
-			style = "width:75vw;display:block;margin:0 auto;"
-		case "img-":
-			style = "width:25vw;display:block;margin:0 auto;"
-		}
-		if styleRe.MatchString(imgTag) {
-			return styleRe.ReplaceAllString(imgTag, `style="`+style+`"`)
-		}
-		return imgTag[:len(imgTag)-1] + ` style="` + style + `">`
-	})
+// 	processed := imageRe.ReplaceAllStringFunc(string(markdownHTML), func(imgTag string) string {
+// 		alt := "img"
+// 		if m := altRe.FindStringSubmatch(imgTag); m != nil {
+// 			alt = m[1]
+// 		}
+// 		style := "width:50vw;display:block;margin:0 auto;"
+// 		switch alt {
+// 		case "img+":
+// 			style = "width:75vw;display:block;margin:0 auto;"
+// 		case "img-":
+// 			style = "width:25vw;display:block;margin:0 auto;"
+// 		}
+// 		if styleRe.MatchString(imgTag) {
+// 			return styleRe.ReplaceAllString(imgTag, `style="`+style+`"`)
+// 		}
+// 		return imgTag[:len(imgTag)-1] + ` style="` + style + `">`
+// 	})
 
-	all[0] = template.HTML(processed)
-	all = append(all, *f.AddScrollKeybinds()) // Add scroll keybinds at the end
+// 	all[0] = template.HTML(processed)
+// 	all = append(all, *f.AddScrollKeybinds()) // Add scroll keybinds at the end
 
-	f.AddFrame(all...) // Only call AddFrame, no return
-}
+// 	f.BuildFrame(all...) // Only call AddFrame, no return
+// }
 
 func (f *Frame) AddScrollKeybinds() *template.HTML {
 	return f.AddJS(

@@ -1,59 +1,70 @@
 package frame
 
 import (
+	"bytes"
 	"html/template"
-	"net/http"
-	"strconv"
-	"strings"
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/yuin/goldmark"
 )
 
 type Frame struct {
-	Md       *goldmark.Markdown
-	Pathless *template.HTML
-	Index    []*template.HTML
-	*mux.Router
+	Md *goldmark.Markdown
 }
 
 func NewFrame(mux *mux.Router) *Frame {
 	frame := &Frame{
-		Md:     initGoldmark(),
-		Index:  make([]*template.HTML, 0),
-		Router: mux,
+		Md: initGoldmark(),
 	}
-	frame.HandleFunc("/frame/{.index}", frame.FrameHandler())
 	return frame
 }
 
-func (f *Frame) AddFrame(elements ...template.HTML) {
-	var builder strings.Builder
-	for _, element := range elements {
-		builder.WriteString(string(element))
-	}
-	value := builder.String()
-	key, _ := intToWord(len(f.Index))
-	value = `<div class="` + key + `">` + value + `</div>`
-	frame := template.HTML(value)
-	f.Index = append(f.Index, &frame)
-}
+func (f *Frame) Index(cssPath string) {
+	// Render the first frame in Frames (index 0)
+	var body template.HTML
 
-// Serve frame by index from header "X", default to 0 if missing/invalid
-func (f *Frame) FrameHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		idx := 0
-		count := len(f.Index)
-		if idxStr := r.Header.Get("X"); idxStr != "" && count > 0 {
-			if n, err := strconv.Atoi(idxStr); err == nil {
-				idx = ((n % count) + count) % count
-			}
-		}
-		if idx >= 0 && idx < count && f.Index[idx] != nil {
-			_, _ = w.Write([]byte(string(*f.Index[idx])))
-		} else {
-			_, _ = w.Write([]byte("<div>404 Not Found</div>"))
-		}
+	file, err := os.ReadFile(cssPath)
+	cssContent := template.CSS("")
+	if err == nil {
+		cssContent = template.CSS(file)
 	}
+	templateStr := `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>hello universe</title>
+    <style>{{.CSS}}</style>
+    <script>{{.Nav}}</script>
+</head>
+<body>
+    <div id="frame">{{.Body}}</div>
+</body>
+</html>`
+
+	tmpl := template.Must(template.New("page").Parse(templateStr))
+	var buf bytes.Buffer
+
+}
+func (f *Frame) NavJS() template.JS {
+	return template.JS(`
+document.addEventListener('DOMContentLoaded', function() {
+    let frameIdx = 0;
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'q') frameIdx--;
+        if (event.key === 'e') frameIdx++;
+        if (event.key === 'q' || event.key === 'e') {
+            fetch('/frame', {
+                headers: { 'X': frameIdx }
+            })
+            .then(r => r.text())
+            .then(html => {
+                const c = document.getElementById('frame');
+                if (c) c.innerHTML = html;
+            });
+        }
+    });
+});
+`)
 }

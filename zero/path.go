@@ -48,15 +48,3 @@ func (z *Zero) AddPath(dir string) (map[string]*Value, error) {
 	})
 	return files, err
 }
-
-// func (z *Zero) Read(routePath string) http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		if file, exists := z.Map[routePath]; exists {
-// 			// w.Header().Set("Cache-Control", "public, max-age=31536000") // 1 year
-// 			w.Header().Set("Content-Type", file.Type)
-// 			w.Write(file.Data)
-// 			return
-// 		}
-// 		http.NotFound(w, r)
-// 	}
-// }

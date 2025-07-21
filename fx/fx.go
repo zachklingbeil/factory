@@ -20,7 +20,7 @@ import (
 )
 
 type Fx struct {
-	ctx      context.Context
+	Ctx      context.Context
 	rpc      *rpc.Client
 	eth      *ethclient.Client
 	postgres *sql.DB
@@ -30,9 +30,10 @@ type Fx struct {
 	*mux.Router
 }
 
-func InitFx(ctx context.Context) *Fx {
+func InitFx() *Fx {
+	ctx := context.Background()
 	fx := &Fx{
-		ctx: ctx,
+		Ctx: ctx,
 		IO:  io.NewIO(ctx),
 	}
 	fx.Router = fx.NewRouter()
@@ -51,7 +52,7 @@ func (f *Fx) NewRouter() *mux.Router {
 
 // Establish geth.ipc connection
 func (f *Fx) Node() (*rpc.Client, *ethclient.Client) {
-	rpc, err := rpc.DialIPC(f.ctx, "/ethereum/geth.ipc") // Updated path
+	rpc, err := rpc.DialIPC(f.Ctx, "/ethereum/geth.ipc") // Updated path
 	if err != nil {
 		log.Printf("Failed to connect to the Ethereum client: %v", err)
 		return nil, nil
@@ -66,7 +67,7 @@ func (f *Fx) Node() (*rpc.Client, *ethclient.Client) {
 // Establish geth.ws connection using API key from environment variable
 func (f *Fx) NodeWS(wsURL, apikey string) (*rpc.Client, *ethclient.Client, error) {
 	fullURL := fmt.Sprintf("%s/%s", wsURL, apikey)
-	rpcClient, err := rpc.DialContext(f.ctx, fullURL)
+	rpcClient, err := rpc.DialContext(f.Ctx, fullURL)
 	if err != nil {
 		log.Printf("Failed to connect to Ethereum WebSocket: %v", err)
 		return nil, nil, err
@@ -98,7 +99,7 @@ func (f *Fx) ConnectRedis(dbNumber int, password string) (*redis.Client, error) 
 		DB:       dbNumber,
 	})
 
-	if _, err := client.Ping(f.ctx).Result(); err != nil {
+	if _, err := client.Ping(f.Ctx).Result(); err != nil {
 		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
 	}
 	f.redis = client
@@ -121,7 +122,7 @@ func (f *Fx) ConnectPostgres(dbName string) (*sql.DB, error) {
 
 // NewOAuthClient returns an authenticated HTTP client (machine-to-machine, no user interaction)
 func (f *Fx) NewOAuthClient(clientID, clientSecret, tokenURL string, scopes []string) (*http.Client, error) {
-	ctx, cancel := context.WithTimeout(f.ctx, 2*time.Minute)
+	ctx, cancel := context.WithTimeout(f.Ctx, 2*time.Minute)
 	defer cancel()
 
 	config := &clientcredentials.Config{

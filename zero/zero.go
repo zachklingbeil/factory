@@ -15,9 +15,9 @@ type Zero struct {
 
 func NewZero() *Zero {
 	return &Zero{
-		Frame:   &frame{},
-		Text:    &text{},
-		Element: &element{},
+		Frame:   NewFrame(),
+		Text:    NewText(),
+		Element: NewElement(),
 	}
 }
 

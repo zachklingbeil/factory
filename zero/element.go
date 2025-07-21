@@ -25,6 +25,10 @@ type Element interface {
 // --- element Implementation ---
 type element struct{}
 
+func NewElement() Element {
+	return &element{}
+}
+
 func (e *element) Div(class string) One {
 	return One(template.HTML(fmt.Sprintf(`<div class="%s"></div>`, html.EscapeString(class))))
 }

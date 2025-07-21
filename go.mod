@@ -7,6 +7,7 @@ require (
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
 	github.com/lib/pq v1.10.9
+	github.com/litao91/goldmark-mathjax v0.0.0-20210217064022-a43cf739a50f
 	github.com/redis/go-redis/v9 v9.11.0
 	github.com/yuin/goldmark v1.7.12
 	golang.org/x/oauth2 v0.30.0

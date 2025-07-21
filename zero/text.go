@@ -5,8 +5,23 @@ import (
 	"html/template"
 	"os"
 
+	math "github.com/litao91/goldmark-mathjax"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
+	h "github.com/yuin/goldmark/renderer/html"
 )
+
+// --- Text Implementation ---
+type text struct {
+	Md *goldmark.Markdown
+}
+
+func NewText() Text {
+	return &text{
+		Md: initGoldmark(),
+	}
+}
 
 type Text interface {
 	AddMarkdown(file string) One
@@ -59,11 +74,6 @@ func (t *text) Time(s string) One       { return Tag("time", s) }
 func (t *text) Button(label string) One { return Tag("button", label) }
 func (t *text) Code(code string) One    { return Tag("code", code) }
 
-// --- Text Implementation ---
-type text struct {
-	Md *goldmark.Markdown
-}
-
 func (t *text) AddMarkdown(file string) One {
 	content, err := os.ReadFile(file)
 	if err != nil {
@@ -76,4 +86,21 @@ func (t *text) AddMarkdown(file string) One {
 	}
 
 	return One(template.HTML(buf.String()))
+}
+
+func initGoldmark() *goldmark.Markdown {
+	md := goldmark.New(
+		goldmark.WithExtensions(extension.GFM, math.MathJax),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+			parser.WithAttribute(),
+			parser.WithBlockParsers(),
+			parser.WithInlineParsers(),
+		),
+		goldmark.WithRendererOptions(
+			h.WithHardWraps(),
+			h.WithXHTML(),
+		),
+	)
+	return &md
 }

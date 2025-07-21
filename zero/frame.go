@@ -19,6 +19,10 @@ type Frame interface {
 // --- frame Implementation ---
 type frame struct{}
 
+func NewFrame() Frame {
+	return &frame{}
+}
+
 func (f *frame) Build(elements []One) One {
 	var b strings.Builder
 	for _, el := range elements {

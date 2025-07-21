@@ -14,18 +14,29 @@ import (
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
+	"github.com/zachklingbeil/factory/fx/io"
 
 	"golang.org/x/oauth2/clientcredentials"
 )
 
 type Fx struct {
-	ctx context.Context
+	ctx      context.Context
+	rpc      *rpc.Client
+	eth      *ethclient.Client
+	postgres *sql.DB
+	redis    *redis.Client
+	oath     *http.Client
+	*io.IO
+	*mux.Router
 }
 
 func InitFx(ctx context.Context) *Fx {
-	return &Fx{
+	fx := &Fx{
 		ctx: ctx,
+		IO:  io.NewIO(ctx),
 	}
+	fx.Router = fx.NewRouter()
+	return fx
 }
 
 func (f *Fx) NewRouter() *mux.Router {
@@ -47,6 +58,8 @@ func (f *Fx) Node() (*rpc.Client, *ethclient.Client) {
 	}
 	// log.Println("Successfully connected to the Ethereum client.")
 	eth := ethclient.NewClient(rpc)
+	f.rpc = rpc
+	f.eth = eth
 	return rpc, eth
 }
 
@@ -59,6 +72,8 @@ func (f *Fx) NodeWS(wsURL, apikey string) (*rpc.Client, *ethclient.Client, error
 		return nil, nil, err
 	}
 	eth := ethclient.NewClient(rpcClient)
+	f.rpc = rpcClient
+	f.eth = eth
 	return rpcClient, eth, nil
 }
 
@@ -71,6 +86,8 @@ func (f *Fx) NodeHTTP(httpURL, apikey string) (*rpc.Client, *ethclient.Client, e
 		return nil, nil, err
 	}
 	eth := ethclient.NewClient(rpcClient)
+	f.rpc = rpcClient
+	f.eth = eth
 	return rpcClient, eth, nil
 }
 
@@ -84,7 +101,7 @@ func (f *Fx) ConnectRedis(dbNumber int, password string) (*redis.Client, error) 
 	if _, err := client.Ping(f.ctx).Result(); err != nil {
 		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
 	}
-
+	f.redis = client
 	return client, nil
 }
 
@@ -94,17 +111,12 @@ func (f *Fx) ConnectPostgres(dbName string) (*sql.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open connection to database '%s': %w", dbName, err)
 	}
-
-	const maxRetries = 5
-	for i := 1; i <= maxRetries; i++ {
-		if err := db.Ping(); err == nil {
-			return db, nil
-		}
-		fmt.Printf("Retrying connection to database '%s' (%d/%d)...\n", dbName, i, maxRetries)
-		time.Sleep(time.Second * time.Duration(i*2))
+	if err := db.Ping(); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to connect to database '%s': %w", dbName, err)
 	}
-	db.Close()
-	return nil, fmt.Errorf("failed to connect to database '%s' after %d retries", dbName, maxRetries)
+	f.postgres = db
+	return db, nil
 }
 
 // NewOAuthClient returns an authenticated HTTP client (machine-to-machine, no user interaction)
@@ -131,5 +143,6 @@ func (f *Fx) NewOAuthClient(clientID, clientSecret, tokenURL string, scopes []st
 		return nil, fmt.Errorf("OAuth client credentials flow failed: %w", err)
 	}
 	fmt.Printf("✓ OAuth client authenticated successfully (token expires: %v)\n", token.Expiry)
+	f.oath = client
 	return client, nil
 }

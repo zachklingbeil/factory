@@ -40,8 +40,8 @@ let currentFrame = 0;
 const totalFrames = %d;
 const domain = "%s";
 
-function updateBody(endpoint) {
-    fetch(endpoint)
+function updateBody(idx) {
+    fetch(domain + "/frame/" + idx)
         .then((res) => res.text())
         .then((html) => {
             document.getElementById('one').innerHTML = html;
@@ -50,7 +50,7 @@ function updateBody(endpoint) {
 
 function showFrame(idx) {
     currentFrame = ((idx %% totalFrames) + totalFrames) %% totalFrames; // wrap around
-    updateBody(domain + "/frame/" + currentFrame);
+    updateBody(currentFrame);
 }
 
 document.addEventListener('DOMContentLoaded', function () {

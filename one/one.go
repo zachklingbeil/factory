@@ -16,10 +16,12 @@ type One struct {
 }
 
 func NewOne() *One {
-	return &One{
+	one := &One{
 		Zero: zero.NewZero(),
 		Fx:   fx.InitFx(),
 	}
+
+	return one
 }
 
 func (o *One) Pathless(cssPath, domain string, frames int) {
@@ -27,8 +29,8 @@ func (o *One) Pathless(cssPath, domain string, frames int) {
 	o.Frames = append(o.Frames, &pathless)
 }
 
-func (o *One) RegisterPathRoutes(dir, prefix string) error {
-	files, err := o.AddPath(dir)
+func (o *One) AddPath(dir, prefix string) error {
+	files, err := o.SourcePath(dir)
 	if err != nil {
 		return err
 	}
@@ -45,9 +47,9 @@ func (o *One) RegisterPathRoutes(dir, prefix string) error {
 }
 
 // frame[0] is served at the root path ("/"), frame[1] and onwards are served at "/frame/{index}"
-func (o *One) RegisterFrameRoutes(mux *http.ServeMux) {
+func (o *One) Index() {
 	// Serve index 0 at "/"
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	o.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		w.Header().Set("X-FRAMES", strconv.Itoa(len(o.Frames)))
 		if len(o.Frames) == 0 {
@@ -58,7 +60,7 @@ func (o *One) RegisterFrameRoutes(mux *http.ServeMux) {
 	})
 
 	// Serve other frames at /frame/{index}
-	mux.HandleFunc("/frame/", func(w http.ResponseWriter, r *http.Request) {
+	o.HandleFunc("/frame/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		w.Header().Set("X-FRAMES", strconv.Itoa(len(o.Frames)))
 		idxStr := strings.TrimPrefix(r.URL.Path, "/frame/")

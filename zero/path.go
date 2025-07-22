@@ -14,7 +14,7 @@ type Value struct {
 
 // Walk single directory and load files into memory
 // Returns a map of file name (without extension) to *Value
-func (z *Zero) AddPath(dir string) (map[string]*Value, error) {
+func (z *Zero) SourcePath(dir string) (map[string]*Value, error) {
 	files := make(map[string]*Value)
 
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {

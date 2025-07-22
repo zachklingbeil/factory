@@ -37,6 +37,10 @@ func InitFx() *Fx {
 		IO:  io.NewIO(ctx),
 	}
 	fx.Router = fx.NewRouter()
+	go func() {
+		log.Println(":1001")
+		http.ListenAndServe(":1001", fx.Router)
+	}()
 	return fx
 }
 

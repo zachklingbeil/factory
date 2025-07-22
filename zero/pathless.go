@@ -41,7 +41,8 @@ const totalFrames = %d;
 const domain = "%s";
 
 function updateBody(idx) {
-    fetch(domain + "/frame/" + idx)
+    let path = idx === 0 ? "/" : "/frame/" + idx;
+    fetch(domain + path)
         .then((res) => res.text())
         .then((html) => {
             document.getElementById('one').innerHTML = html;

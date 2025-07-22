@@ -27,6 +27,10 @@ func NewOne() *One {
 func (o *One) Pathless(cssPath, domain string, frames int) {
 	pathless := o.BuildPathless(cssPath, domain, frames)
 	o.Frames = append(o.Frames, &pathless)
+	o.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(pathless))
+	})
 }
 
 func (o *One) AddPath(dir, prefix string) error {

@@ -54,8 +54,8 @@ func (z *Zero) BuildPathless(css, js string) {
 		One(`<meta charset="UTF-8" />`),
 		One(`<meta name="viewport" content="width=device-width, initial-scale=1.0" />`),
 		One(`<title>hello universe</title>`),
-		z.CSS(c),
-		z.JS(j),
+		One(fmt.Sprintf(`<style>%s</style>`, c)),
+		One(fmt.Sprintf(`<script>%s</script>`, j)),
 	})
 	html := One(fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">

@@ -18,9 +18,8 @@ func NewOne() *One {
 	return one
 }
 
-func (o *One) InitPathless(elements []zero.One, css, js string) {
-	frame := o.Build(elements)
-	o.Body = o.Final("home", frame)
+func (o *One) InitPathless(body zero.One, css, js string) {
+	o.Body = body
 	o.BuildPathless(css, js)
 	o.AddFrame(o.Pathless, o.Router)
 }

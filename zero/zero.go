@@ -61,7 +61,7 @@ func (z *Zero) BuildPathless(css, js string) {
 <html lang="en">
 <head>%s</head>
 <body>
-<div id="one">%s</div>
+%s
 </body>
 </html>`, head, z.Body))
 	z.Pathless = html

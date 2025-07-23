@@ -4,23 +4,41 @@ import (
 	"fmt"
 	"html"
 	"html/template"
+	"os"
 	"strings"
 )
 
 type Frame interface {
 	Build(elements []One) One
-	Final(class string, elements []One) One
+	Final(class string, element One) One
 	JS(js string) One
 	CSS(css string) One
 	AddKeybind(containerId string, keyHandlers map[string]string) One
 	AddScrollKeybinds() One
+	FileToString(path string) string
+	Text
+	Element
 }
 
 // --- frame Implementation ---
-type frame struct{}
+type frame struct {
+	Text
+	Element
+}
 
 func NewFrame() Frame {
-	return &frame{}
+	return &frame{
+		Text:    NewText(),
+		Element: NewElement(),
+	}
+}
+
+func (f *frame) FileToString(path string) string {
+	file, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	return string(file)
 }
 
 func (f *frame) Build(elements []One) One {
@@ -31,11 +49,9 @@ func (f *frame) Build(elements []One) One {
 	return One(template.HTML(b.String()))
 }
 
-func (f *frame) Final(class string, elements []One) One {
-	content := string(f.Build(elements))
-	return One(template.HTML(fmt.Sprintf(`<div class="%s">%s</div>`, html.EscapeString(class), content)))
+func (f *frame) Final(class string, element One) One {
+	return One(template.HTML(fmt.Sprintf(`<div class="%s">%s</div>`, html.EscapeString(class), string(element))))
 }
-
 func (f *frame) JS(js string) One {
 	return One(template.HTML(fmt.Sprintf(`<script>%s</script>`, js)))
 }

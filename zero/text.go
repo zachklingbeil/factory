@@ -2,11 +2,15 @@ package zero
 
 import (
 	"bytes"
+	"fmt"
+	"html"
 	"html/template"
 	"os"
+	"strings"
+
+	"github.com/yuin/goldmark"
 
 	math "github.com/litao91/goldmark-mathjax"
-	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	h "github.com/yuin/goldmark/renderer/html"
@@ -21,6 +25,51 @@ func NewText() Text {
 	return &text{
 		Md: initGoldmark(),
 	}
+}
+
+func (t *text) AddMarkdown(file string) One {
+	content, err := os.ReadFile(file)
+	if err != nil {
+		return One("")
+	}
+
+	var buf bytes.Buffer
+	if err := (*t.Md).Convert(content, &buf); err != nil {
+		return One("")
+	}
+
+	return One(template.HTML(buf.String()))
+}
+
+func initGoldmark() *goldmark.Markdown {
+	md := goldmark.New(
+		goldmark.WithExtensions(extension.GFM, math.MathJax),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+			parser.WithAttribute(),
+			parser.WithBlockParsers(),
+			parser.WithInlineParsers(),
+		),
+		goldmark.WithRendererOptions(
+			h.WithHardWraps(),
+			h.WithXHTML(),
+		),
+	)
+	return &md
+}
+
+func Tag(tag, text string) One {
+	return One(template.HTML(fmt.Sprintf("<%s>%s</%s>", tag, html.EscapeString(text), tag)))
+}
+
+func ClosedTag(tag string, attrs map[string]string) One {
+	var b strings.Builder
+	b.WriteString("<")
+	b.WriteString(tag)
+	for k, v := range attrs {
+		b.WriteString(fmt.Sprintf(` %s="%s"`, k, html.EscapeString(v)))
+	}
+	return One(template.HTML(b.String()))
 }
 
 type Text interface {
@@ -73,34 +122,3 @@ func (t *text) Abbr(s string) One       { return Tag("abbr", s) }
 func (t *text) Time(s string) One       { return Tag("time", s) }
 func (t *text) Button(label string) One { return Tag("button", label) }
 func (t *text) Code(code string) One    { return Tag("code", code) }
-
-func (t *text) AddMarkdown(file string) One {
-	content, err := os.ReadFile(file)
-	if err != nil {
-		return One("")
-	}
-
-	var buf bytes.Buffer
-	if err := (*t.Md).Convert(content, &buf); err != nil {
-		return One("")
-	}
-
-	return One(template.HTML(buf.String()))
-}
-
-func initGoldmark() *goldmark.Markdown {
-	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM, math.MathJax),
-		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(),
-			parser.WithAttribute(),
-			parser.WithBlockParsers(),
-			parser.WithInlineParsers(),
-		),
-		goldmark.WithRendererOptions(
-			h.WithHardWraps(),
-			h.WithXHTML(),
-		),
-	)
-	return &md
-}

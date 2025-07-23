@@ -18,9 +18,9 @@ type Zero struct {
 func NewZero() *Zero {
 	return &Zero{
 		Frame:    NewFrame(),
-		Pathless: "",
-		Body:     "",
 		Frames:   make([]One, 0),
+		Pathless: One(""),
+		Body:     One(""),
 	}
 }
 
@@ -43,26 +43,25 @@ func (z *Zero) AddFrame(frame One, router *mux.Router) {
 func (z *Zero) FrameCount() uint {
 	return uint(len(z.Frames))
 }
+
 func (z *Zero) Swap(id uint) {
 	z.Body = z.Frames[id]
 }
 
-func (z *Zero) BuildPathless(css, js string) {
+func (z *Zero) BuildPathless(body One, css, js string) {
 	c := z.FileToString(css)
 	j := z.FileToString(js)
 	head := z.Build([]One{
 		One(`<meta charset="UTF-8" />`),
 		One(`<meta name="viewport" content="width=device-width, initial-scale=1.0" />`),
 		One(`<title>hello universe</title>`),
-		One(fmt.Sprintf(`<style>%s</style>`, c)),
-		One(fmt.Sprintf(`<script>%s</script>`, j)),
+		z.CSS(c),
+		z.JS(j),
 	})
 	html := One(fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>%s</head>
-<body>
-%s
-</body>
+<body><div id="one">%s</div></body>
 </html>`, head, z.Body))
 	z.Pathless = html
 }

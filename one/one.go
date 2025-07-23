@@ -19,8 +19,7 @@ func NewOne() *One {
 }
 
 func (o *One) InitPathless(body zero.One, css, js string) {
-	o.Body = body
-	o.BuildPathless(css, js)
+	o.BuildPathless(body, css, js)
 	o.AddFrame(o.Pathless, o.Router)
 }
 

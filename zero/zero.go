@@ -60,7 +60,9 @@ func (z *Zero) BuildPathless(css, js string) {
 	html := One(fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>%s</head>
-<body>%s</body>
+<body>
+<div id="one">%s</div>
+</body>
 </html>`, head, z.Body))
 	z.Pathless = html
 }

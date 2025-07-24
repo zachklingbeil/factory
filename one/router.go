@@ -31,7 +31,7 @@ func (o *One) Circuit() {
 
 func (o *One) servePathless(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-FRAMES", o.FrameCount())
-	fmt.Fprint(w, o.GetPathless())
+	fmt.Fprint(w, *o.GetPathless())
 }
 
 func (o *One) serveFrame(w http.ResponseWriter, r *http.Request) {

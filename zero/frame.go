@@ -79,19 +79,31 @@ func (f *frame) Pathless(css, js string) {
 	}
 
 	var html strings.Builder
-	html.WriteString(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>hello universe</title>`)
+	// Proper DOCTYPE and HTML structure with formatting
+	html.WriteString("<!DOCTYPE html>\n")
+	html.WriteString("<html lang=\"en\">\n")
+	html.WriteString("<head>\n")
+	html.WriteString("  <meta charset=\"UTF-8\" />\n")
+	html.WriteString("  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n")
+	html.WriteString("  <title>hello universe</title>\n")
 
 	if c != "" {
-		html.WriteString(`<style>`)
+		html.WriteString("  <style>\n")
 		html.WriteString(c)
-		html.WriteString(`</style>`)
+		html.WriteString("\n  </style>\n")
 	}
 	if j != "" {
-		html.WriteString(`<script>`)
+		html.WriteString("  <script>\n")
 		html.WriteString(j)
-		html.WriteString(`</script>`)
+		html.WriteString("\n  </script>\n")
 	}
-	html.WriteString(`</head><body><div id="one"></div></body></html>`)
+
+	html.WriteString("</head>\n")
+	html.WriteString("<body>\n")
+	html.WriteString("  <div id=\"one\"></div>\n")
+	html.WriteString("</body>\n")
+	html.WriteString("</html>")
+
 	result := One(template.HTML(html.String()))
 	f.pathless = &result
 }

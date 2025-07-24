@@ -30,7 +30,6 @@ func (o *One) Circuit() {
 }
 
 func (o *One) servePathless(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("X-FRAMES", o.FrameCount())
 	fmt.Fprint(w, o.GetPathless())
 }

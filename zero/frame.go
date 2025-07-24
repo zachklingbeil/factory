@@ -10,13 +10,12 @@ import (
 
 type Frame interface {
 	Pathless(css, js string)
-	GetPathless() *One
 	Build(class string, elements ...One) *One
 	BuildFrame(class string, elements ...One)
 	JS(js string) One
 	CSS(css string) One
-	AddFrame(frame *One)
-	GetFrame(index int) (*One, bool)
+	GetPathless() *One
+	GetFrame(index int) *One
 	FrameCount() string
 	Text
 	Element
@@ -62,7 +61,9 @@ func (f *frame) Build(class string, elements ...One) *One {
 }
 
 func (f *frame) BuildFrame(class string, elements ...One) {
-	f.AddFrame(f.Build(class, elements...))
+	frame := f.Build(class, elements...)
+	f.frames = append(f.frames, frame)
+	f.count++
 }
 
 func (f *frame) GetPathless() *One {
@@ -107,18 +108,9 @@ func (f *frame) FrameCount() string {
 	return strconv.Itoa(int(f.count) - 1)
 }
 
-// Add a finalized frame to the collection
-func (f *frame) AddFrame(frame *One) {
-	f.frames = append(f.frames, frame)
-	f.count++
-}
-
 // Retrieve a frame by index
-func (f *frame) GetFrame(index int) (*One, bool) {
-	if index < 0 || index >= int(f.count) {
-		return nil, false
-	}
-	return f.frames[index], true
+func (f *frame) GetFrame(index int) *One {
+	return f.frames[index]
 }
 
 func (f *frame) JS(js string) One {

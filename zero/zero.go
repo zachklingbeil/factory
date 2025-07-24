@@ -9,10 +9,9 @@ type Zero struct {
 }
 
 func NewZero() *Zero {
-	z := &Zero{
+	return &Zero{
 		Frame: NewFrame(),
 	}
-	return z
 }
 
 type One template.HTML

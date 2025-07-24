@@ -30,8 +30,6 @@ func (o *One) Circuit() {
 }
 
 func (o *One) servePathless(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
 	frame, exists := o.GetFrame(0)
 	if !exists {
 		http.Error(w, "Pathless frame not found", http.StatusNotFound)

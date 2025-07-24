@@ -51,18 +51,20 @@ func (f *frame) Merge(elements ...One) One {
 func (f *frame) Pathless(css, js string, body One) {
 	c := f.FileToString(css)
 	j := f.FileToString(js)
-	f.Build("pathless", []One{
+
+	result := f.Merge(
 		One(`<!DOCTYPE html>`),
 		One(`<html lang="en">`),
 		One(`<head>`),
 		One(`<meta charset="UTF-8" />`),
 		One(`<meta name="viewport" content="width=device-width, initial-scale=1.0" />`),
 		One(`<title>hello universe</title>`),
-		One(f.CSS(string(c))),
-		One(f.JS(string(j))),
+		f.CSS(c),
+		f.JS(j),
 		One(`</head>`),
 		One(fmt.Sprintf(`<body><div id="one">%s</div></body></html>`, string(body))),
-	})
+	)
+	f.AddFrame(&result)
 }
 
 // Add a finalized frame to the collection

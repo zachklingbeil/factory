@@ -104,7 +104,7 @@ func (f *frame) Pathless(css, js string) {
 }
 
 func (f *frame) FrameCount() string {
-	return strconv.Itoa(int(f.count))
+	return strconv.Itoa(int(f.count) - 1)
 }
 
 // Add a finalized frame to the collection

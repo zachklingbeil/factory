@@ -12,6 +12,7 @@ import (
 type Frame interface {
 	Build(class string, elements []One)
 	Merge(elements ...One) One // Merge multiple elements into one
+	Wrap(class string, elements ...One) One
 	Pathless(css, js string, body One)
 	JS(js string) One
 	CSS(css string) One
@@ -48,6 +49,16 @@ func (f *frame) Merge(elements ...One) One {
 		b.WriteString(string(el))
 	}
 	return One(template.HTML(b.String()))
+}
+
+func (f *frame) Wrap(class string, elements ...One) One {
+	var b strings.Builder
+	for _, el := range elements {
+		b.WriteString(string(el))
+	}
+	consolidatedContent := template.HTML(b.String())
+	result := fmt.Sprintf(`<div class="%s">%s</div>`, html.EscapeString(class), string(consolidatedContent))
+	return One(template.HTML(result))
 }
 
 func (f *frame) Pathless(css, js string, body One) {

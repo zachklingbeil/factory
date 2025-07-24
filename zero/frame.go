@@ -5,6 +5,7 @@ import (
 	"html"
 	"html/template"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -19,6 +20,7 @@ type Frame interface {
 	FileToString(path string) string
 	AddFrame(frame *One)
 	GetFrame(index int) (*One, bool)
+	FrameCount() string
 	Text
 	Element
 }
@@ -65,6 +67,10 @@ func (f *frame) Pathless(css, js string, body One) {
 		One(fmt.Sprintf(`<body><div id="one">%s</div></body></html>`, string(body))),
 	)
 	f.AddFrame(&result)
+}
+
+func (f *frame) FrameCount() string {
+	return strconv.Itoa(int(f.count))
 }
 
 // Add a finalized frame to the collection

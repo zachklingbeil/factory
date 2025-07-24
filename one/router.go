@@ -35,6 +35,7 @@ func (o *One) servePathless(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Pathless frame not found", http.StatusNotFound)
 		return
 	}
+	w.Header().Set("X-FRAMES", o.FrameCount())
 	fmt.Fprint(w, string(*frame))
 }
 

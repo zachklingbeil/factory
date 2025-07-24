@@ -9,13 +9,15 @@ import (
 )
 
 type Frame interface {
-	Build(elements []One) *One
-	Final(class string, element One) *One
+	Build(class string, elements []One)
+	Pathless(css, js string, body One)
 	JS(js string) One
 	CSS(css string) One
 	AddKeybind(containerId string, keyHandlers map[string]string) One
 	AddScrollKeybinds() One
 	FileToString(path string) string
+	AddFrame(frame *One)
+	GetFrame(index int) (*One, bool)
 	Text
 	Element
 }
@@ -24,13 +26,48 @@ type Frame interface {
 type frame struct {
 	Text
 	Element
+	frames []*One
+	count  uint
 }
 
 func NewFrame() Frame {
 	return &frame{
 		Text:    NewText(),
 		Element: NewElement(),
+		frames:  make([]*One, 0),
+		count:   0,
 	}
+}
+
+func (f *frame) Pathless(css, js string, body One) {
+	c := f.FileToString(css)
+	j := f.FileToString(js)
+	f.Build("pathless", []One{
+		One(`<!DOCTYPE html>`),
+		One(`<html lang="en">`),
+		One(`<head>`),
+		One(`<meta charset="UTF-8" />`),
+		One(`<meta name="viewport" content="width=device-width, initial-scale=1.0" />`),
+		One(`<title>hello universe</title>`),
+		One(f.CSS(string(c))),
+		One(f.JS(string(j))),
+		One(`</head>`),
+		One(fmt.Sprintf(`<body><div id="one">%s</div></body></html>`, string(body))),
+	})
+}
+
+// Add a finalized frame to the collection
+func (f *frame) AddFrame(frame *One) {
+	f.frames = append(f.frames, frame)
+	f.count++
+}
+
+// Retrieve a frame by index
+func (f *frame) GetFrame(index int) (*One, bool) {
+	if index < 0 || index >= int(f.count) {
+		return nil, false
+	}
+	return f.frames[index], true
 }
 
 func (f *frame) FileToString(path string) string {
@@ -41,18 +78,15 @@ func (f *frame) FileToString(path string) string {
 	return string(file)
 }
 
-func (f *frame) Build(elements []One) *One {
+func (f *frame) Build(class string, elements []One) {
 	var b strings.Builder
 	for _, el := range elements {
 		b.WriteString(string(el))
 	}
-	result := One(template.HTML(b.String()))
-	return &result
-}
 
-func (f *frame) Final(class string, element One) *One {
-	result := One(template.HTML(fmt.Sprintf(`<div class="%s">%s</div>`, html.EscapeString(class), string(element))))
-	return &result
+	consolidatedContent := One(template.HTML(b.String()))
+	result := One(template.HTML(fmt.Sprintf(`<div class="%s">%s</div>`, html.EscapeString(class), string(consolidatedContent))))
+	f.AddFrame(&result)
 }
 
 func (f *frame) JS(js string) One {

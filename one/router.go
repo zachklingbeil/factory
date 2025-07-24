@@ -25,8 +25,8 @@ func (o *One) NewRouter() *mux.Router {
 }
 
 func (o *One) Circuit() {
-	o.PathPrefix("/").HandlerFunc(o.servePathless)
-	o.PathPrefix("/frame/{index}").HandlerFunc(o.serveFrame)
+	o.Path("/").HandlerFunc(o.servePathless)
+	o.Path("/frame/{index}").HandlerFunc(o.serveFrame)
 }
 
 func (o *One) servePathless(w http.ResponseWriter, r *http.Request) {

@@ -3,52 +3,36 @@ package zero
 import (
 	"fmt"
 	"html/template"
-	"net/http"
-
-	"github.com/gorilla/mux"
 )
 
 type Zero struct {
 	Frame
-	Pathless One
-	Body     One
-	Frames   []One
+	Pathless *One
+	Frames   []*One
 }
 
-func NewZero() *Zero {
-	return &Zero{
-		Frame:    NewFrame(),
-		Frames:   make([]One, 0),
-		Pathless: One(""),
-		Body:     One(""),
+func NewZero(css, js string) *Zero {
+	z := &Zero{
+		Frame:  NewFrame(),
+		Frames: make([]*One, 0),
 	}
+	pathless := z.BuildPathless(css, js)
+	z.Pathless = &pathless
+	z.AddFrame(z.Pathless)
+	return z
 }
 
 type One template.HTML
 
-func (z *Zero) AddFrame(frame One, router *mux.Router) {
+func (z *Zero) AddFrame(frame *One) {
 	z.Frames = append(z.Frames, frame)
-	index := len(z.Frames) - 1
-	path := "/"
-	if index > 0 {
-		path = "/frame/" + fmt.Sprint(index)
-	}
-	router.HandleFunc(path, func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Header().Set("X-Frames", fmt.Sprint(len(z.Frames)))
-		w.Write([]byte(z.Frames[index]))
-	}).Methods("GET")
 }
 
 func (z *Zero) FrameCount() uint {
 	return uint(len(z.Frames))
 }
 
-func (z *Zero) Swap(id uint) {
-	z.Body = z.Frames[id]
-}
-
-func (z *Zero) BuildPathless(body One, css, js string) {
+func (z *Zero) BuildPathless(css, js string) One {
 	c := z.FileToString(css)
 	j := z.FileToString(js)
 	head := z.Build([]One{
@@ -61,7 +45,8 @@ func (z *Zero) BuildPathless(body One, css, js string) {
 	html := One(fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
 <head>%s</head>
-<body><div id="one">%s</div></body>
-</html>`, head, z.Body))
-	z.Pathless = html
+<body><div id="one"></div></body>
+</html>`, *head))
+
+	return html
 }

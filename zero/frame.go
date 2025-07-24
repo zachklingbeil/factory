@@ -9,8 +9,8 @@ import (
 )
 
 type Frame interface {
-	Build(elements []One) One
-	Final(class string, element One) One
+	Build(elements []One) *One
+	Final(class string, element One) *One
 	JS(js string) One
 	CSS(css string) One
 	AddKeybind(containerId string, keyHandlers map[string]string) One
@@ -41,17 +41,20 @@ func (f *frame) FileToString(path string) string {
 	return string(file)
 }
 
-func (f *frame) Build(elements []One) One {
+func (f *frame) Build(elements []One) *One {
 	var b strings.Builder
 	for _, el := range elements {
 		b.WriteString(string(el))
 	}
-	return One(template.HTML(b.String()))
+	result := One(template.HTML(b.String()))
+	return &result
 }
 
-func (f *frame) Final(class string, element One) One {
-	return One(template.HTML(fmt.Sprintf(`<div class="%s">%s</div>`, html.EscapeString(class), string(element))))
+func (f *frame) Final(class string, element One) *One {
+	result := One(template.HTML(fmt.Sprintf(`<div class="%s">%s</div>`, html.EscapeString(class), string(element))))
+	return &result
 }
+
 func (f *frame) JS(js string) One {
 	return One(template.HTML(fmt.Sprintf(`<script>%s</script>`, js)))
 }

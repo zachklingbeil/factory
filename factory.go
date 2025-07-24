@@ -16,8 +16,8 @@ type Motion struct {
 	*sync.Cond
 }
 
-func InitFactory() *Factory {
+func InitFactory(css, js string) *Factory {
 	return &Factory{
-		One: one.NewOne(),
+		One: one.NewOne(css, js),
 	}
 }

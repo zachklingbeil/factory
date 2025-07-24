@@ -10,6 +10,7 @@ import (
 
 type Frame interface {
 	Build(class string, elements []One)
+	Merge(elements ...One) One // Merge multiple elements into one
 	Pathless(css, js string, body One)
 	JS(js string) One
 	CSS(css string) One
@@ -37,6 +38,14 @@ func NewFrame() Frame {
 		frames:  make([]*One, 0),
 		count:   0,
 	}
+}
+
+func (f *frame) Merge(elements ...One) One {
+	var b strings.Builder
+	for _, el := range elements {
+		b.WriteString(string(el))
+	}
+	return One(template.HTML(b.String()))
 }
 
 func (f *frame) Pathless(css, js string, body One) {

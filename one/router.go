@@ -30,18 +30,11 @@ func (o *One) Circuit() {
 }
 
 func (o *One) servePathless(w http.ResponseWriter, r *http.Request) {
-	frame, exists := o.GetFrame(0)
-	if !exists {
-		http.Error(w, "Pathless frame not found", http.StatusNotFound)
-		return
-	}
 	w.Header().Set("X-FRAMES", o.FrameCount())
-	fmt.Fprint(w, string(*frame))
+	fmt.Fprint(w, o.GetPathless())
 }
 
 func (o *One) serveFrame(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
 	indexStr := mux.Vars(r)["index"]
 	index, err := strconv.Atoi(indexStr)
 
@@ -55,8 +48,7 @@ func (o *One) serveFrame(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Frame not found", http.StatusNotFound)
 		return
 	}
-
-	fmt.Fprint(w, string(*frame))
+	fmt.Fprint(w, *frame)
 }
 
 func (o *One) corsMiddleware() mux.MiddlewareFunc {

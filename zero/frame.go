@@ -4,80 +4,96 @@ import (
 	"fmt"
 	"html"
 	"html/template"
-	"os"
 	"strconv"
 	"strings"
 )
 
 type Frame interface {
-	Build(class string, elements []One)
-	Merge(elements ...One) One // Merge multiple elements into one
-	Wrap(class string, elements ...One) One
-	Pathless(css, js string, body One)
+	Pathless(css, js string)
+	GetPathless() *One
+	Build(class string, elements ...One) *One
+	BuildFrame(class string, elements ...One)
 	JS(js string) One
 	CSS(css string) One
-	AddKeybind(containerId string, keyHandlers map[string]string) One
-	AddScrollKeybinds() One
-	FileToString(path string) string
 	AddFrame(frame *One)
 	GetFrame(index int) (*One, bool)
 	FrameCount() string
 	Text
 	Element
+	Keybind
 }
 
 // --- frame Implementation ---
 type frame struct {
 	Text
 	Element
-	frames []*One
-	count  uint
+	Keybind
+	frames   []*One
+	count    uint
+	pathless *One
 }
 
 func NewFrame() Frame {
 	return &frame{
-		Text:    NewText(),
-		Element: NewElement(),
-		frames:  make([]*One, 0),
-		count:   0,
+		Text:     NewText(),
+		Element:  NewElement(),
+		frames:   make([]*One, 0),
+		Keybind:  &keybind{},
+		count:    0,
+		pathless: nil,
 	}
 }
 
-func (f *frame) Merge(elements ...One) One {
+func (f *frame) Build(class string, elements ...One) *One {
 	var b strings.Builder
 	for _, el := range elements {
 		b.WriteString(string(el))
 	}
-	return One(template.HTML(b.String()))
-}
 
-func (f *frame) Wrap(class string, elements ...One) One {
-	var b strings.Builder
-	for _, el := range elements {
-		b.WriteString(string(el))
+	if class == "" {
+		result := One(template.HTML(b.String()))
+		return &result
 	}
+
 	consolidatedContent := template.HTML(b.String())
-	result := fmt.Sprintf(`<div class="%s">%s</div>`, html.EscapeString(class), string(consolidatedContent))
-	return One(template.HTML(result))
+	htmlResult := fmt.Sprintf(`<div class="%s">%s</div>`, html.EscapeString(class), string(consolidatedContent))
+	result := One(template.HTML(htmlResult))
+	return &result
 }
 
-func (f *frame) Pathless(css, js string, body One) {
-	c := f.FileToString(css)
-	j := f.FileToString(js)
+func (f *frame) BuildFrame(class string, elements ...One) {
+	f.AddFrame(f.Build(class, elements...))
+}
 
-	result := f.Merge(
-		One(`<!DOCTYPE html>`),
-		One(`<html lang="en">`),
-		One(`<head>`),
-		One(`<meta charset="UTF-8" />`),
-		One(`<meta name="viewport" content="width=device-width, initial-scale=1.0" />`),
-		One(`<title>hello universe</title>`),
-		f.CSS(c),
-		f.JS(j),
-		One(`</head>`),
-		One(fmt.Sprintf(`<body><div id="one">%s</div></body></html>`, string(body))),
-	)
-	f.AddFrame(&result)
+func (f *frame) GetPathless() *One {
+	return f.pathless
+}
+
+func (f *frame) Pathless(css, js string) {
+	var c, j string
+	if css != "" {
+		c = f.FileToString(css)
+	}
+	if js != "" {
+		j = f.FileToString(js)
+	}
+
+	var html strings.Builder
+	html.WriteString(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>hello universe</title>`)
+
+	if c != "" {
+		html.WriteString(`<style>`)
+		html.WriteString(c)
+		html.WriteString(`</style>`)
+	}
+	if j != "" {
+		html.WriteString(`<script>`)
+		html.WriteString(j)
+		html.WriteString(`</script>`)
+	}
+	html.WriteString(`</head></html>`)
+	result := One(template.HTML(html.String()))
+	f.pathless = &result
 }
 
 func (f *frame) FrameCount() string {
@@ -98,66 +114,18 @@ func (f *frame) GetFrame(index int) (*One, bool) {
 	return f.frames[index], true
 }
 
-func (f *frame) FileToString(path string) string {
-	file, err := os.ReadFile(path)
-	if err != nil {
-		return ""
-	}
-	return string(file)
-}
-
-func (f *frame) Build(class string, elements []One) {
-	var b strings.Builder
-	for _, el := range elements {
-		b.WriteString(string(el))
-	}
-
-	consolidatedContent := One(template.HTML(b.String()))
-	result := One(template.HTML(fmt.Sprintf(`<div class="%s">%s</div>`, html.EscapeString(class), string(consolidatedContent))))
-	f.AddFrame(&result)
-}
-
 func (f *frame) JS(js string) One {
-	return One(template.HTML(fmt.Sprintf(`<script>%s</script>`, js)))
+	var b strings.Builder
+	b.WriteString(`<script>`)
+	b.WriteString(js)
+	b.WriteString(`</script>`)
+	return One(template.HTML(b.String()))
 }
 
 func (f *frame) CSS(css string) One {
-	return One(template.HTML(fmt.Sprintf(`<style>%s</style>`, css)))
-}
-
-func (f *frame) AddKeybind(containerId string, keyHandlers map[string]string) One {
-	var handlers strings.Builder
-	for key, handlerCode := range keyHandlers {
-		handlers.WriteString(fmt.Sprintf(`
-         if (event.key === %q) {
-            %s
-         }
-        `, key, handlerCode))
-	}
-	js := fmt.Sprintf(`
-document.addEventListener('DOMContentLoaded', () => {
-   const container = document.getElementById(%q);
-   if (!container) return;
-   container.tabIndex = 0;
-   container.addEventListener('keydown', (event) => {
-      %s
-   });
-});
-`, containerId, handlers.String())
-	return One(template.HTML(fmt.Sprintf(`<script>%s</script>`, js)))
-}
-
-func (f *frame) AddScrollKeybinds() One {
-	return f.JS(
-		`document.addEventListener('keydown', function(event) {
-            const c = document.getElementById('one');
-            if (!c) return;
-            if (event.key === 'w') {
-                c.scrollBy({ top: -100, behavior: 'smooth' });
-            }
-            if (event.key === 's') {
-                c.scrollBy({ top: 100, behavior: 'smooth' });
-            }
-        });`,
-	)
+	var b strings.Builder
+	b.WriteString(`<style>`)
+	b.WriteString(css)
+	b.WriteString(`</style>`)
+	return One(template.HTML(b.String()))
 }

@@ -91,7 +91,7 @@ func (f *frame) Pathless(css, js string) {
 		html.WriteString(j)
 		html.WriteString(`</script>`)
 	}
-	html.WriteString(`</head></html>`)
+	html.WriteString(`</head><body><div id="one"></div></body></html>`)
 	result := One(template.HTML(html.String()))
 	f.pathless = &result
 }

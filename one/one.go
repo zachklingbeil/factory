@@ -28,6 +28,7 @@ func NewOne(css, js string) *One {
 		Fx:   fx.InitFx(),
 	}
 	o.Router = o.NewRouter()
+	o.Circuit()
 	return o
 }
 

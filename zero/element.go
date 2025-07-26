@@ -22,6 +22,8 @@ type Element interface {
 	Canvas(id string) One
 	Table(cols uint8, rows uint64, data [][]string) One
 	FileToString(path string) string
+	CoordinatePlane() One // <-- Add this line
+
 }
 
 // --- element Implementation ---
@@ -105,4 +107,8 @@ func (e *element) Table(cols uint8, rows uint64, data [][]string) One {
 	}
 	b.WriteString("</table>")
 	return One(template.HTML(b.String()))
+}
+
+func (e *element) CoordinatePlane() One {
+	return One(template.HTML(`<div class="coordinate-plane" id="coordinate-plane"></div>`))
 }

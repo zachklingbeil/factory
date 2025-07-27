@@ -11,13 +11,47 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/zachklingbeil/factory/zero"
 )
 
 func (o *One) Circuit() {
 	o.Path("/").HandlerFunc(o.servePathless)
 	o.Path("/frame/{index}").HandlerFunc(o.serveFrame)
-	o.Path("/api").HandlerFunc(o.serveAPI)
-	o.Path("/api/{file}").HandlerFunc(o.serveAPIFile) // <-- Add this line
+}
+
+func (o *One) RegisterAPI(prefix string, coords []zero.Coordinate) {
+	o.Path(prefix).HandlerFunc(o.makeAPIHandler(prefix))
+	o.Path(prefix + "/{x}").HandlerFunc(o.makeAPIHandler(prefix))
+	o.Path(prefix + "/{x}/{y}").HandlerFunc(o.makeAPIHandler(prefix))
+}
+
+func (o *One) makeAPIHandler(prefix string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		vars := mux.Vars(r)
+		x, xOK := vars["x"]
+		y, yOK := vars["y"]
+
+		_, ok := o.Api[prefix]
+		if !ok {
+			http.Error(w, "No data for prefix", http.StatusNotFound)
+			return
+		}
+
+		var result any
+		switch {
+		case xOK && yOK:
+			result = o.GetZ(x, y)
+		case xOK:
+			result = o.GetY(x)
+		default:
+			result = o.GetX()
+		}
+
+		if err := json.NewEncoder(w).Encode(result); err != nil {
+			http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
+		}
+	}
 }
 
 func (o *One) servePathless(w http.ResponseWriter, r *http.Request) {
@@ -29,36 +63,6 @@ func (o *One) servePathless(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Fprint(w, *pathless)
-}
-
-// Handler for /api/{file} that serves a JSON file from the ./api directory
-func (o *One) serveAPIFile(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	file := vars["file"]
-	if !strings.HasSuffix(file, ".json") {
-		file += ".json"
-	}
-	filePath := filepath.Join("api", file) // Adjust directory as needed
-
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		http.Error(w, "File not found", http.StatusNotFound)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
-}
-
-// Handler for /api that returns JSON
-func (o *One) serveAPI(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	response := map[string]any{
-		"status":  "ok",
-		"message": "API endpoint",
-	}
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
-	}
 }
 
 func (o *One) serveFrame(w http.ResponseWriter, r *http.Request) {

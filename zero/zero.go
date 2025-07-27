@@ -24,6 +24,7 @@ type Zero interface {
 	Element
 	Keybind
 	Embed
+	Universe
 }
 
 // --- zero Implementation ---
@@ -32,6 +33,7 @@ type zero struct {
 	*element
 	*keybind
 	*embed
+	*coordinates
 	frames   []*One
 	count    uint
 	pathless *One
@@ -39,13 +41,14 @@ type zero struct {
 
 func NewZero() Zero {
 	return &zero{
-		text:     NewText().(*text),
-		element:  NewElement().(*element),
-		keybind:  &keybind{},
-		embed:    NewEmbed().(*embed),
-		frames:   make([]*One, 0),
-		count:    0,
-		pathless: nil,
+		text:        NewText().(*text),
+		element:     NewElement().(*element),
+		keybind:     &keybind{},
+		embed:       NewEmbed().(*embed),
+		frames:      make([]*One, 0),
+		coordinates: NewUniverse().(*coordinates),
+		count:       0,
+		pathless:    nil,
 	}
 }
 

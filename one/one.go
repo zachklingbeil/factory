@@ -8,12 +8,14 @@ import (
 type One struct {
 	zero.Zero
 	*fx.Fx
+	Api map[string]zero.Coordinate
 }
 
 func NewOne() *One {
 	o := &One{
 		Zero: zero.NewZero(),
 		Fx:   fx.InitFx(),
+		Api:  make(map[string]zero.Coordinate),
 	}
 	o.Circuit()
 	return o

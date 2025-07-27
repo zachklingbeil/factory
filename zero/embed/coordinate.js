@@ -72,12 +72,14 @@ class CoordinatePlane {
 	}
 }
 
-fetch('/api/test')
-	.then((r) => r.json())
-	.then((data) => {
-		const plane = new CoordinatePlane(
-			document.getElementById('coordinate-plane')
-		);
-		plane.initFromJson(data);
-	})
-	.catch((err) => console.error('Failed to load test.json:', err));
+document.addEventListener('DOMContentLoaded', () => {
+	fetch('/api/test')
+		.then((r) => r.json())
+		.then((data) => {
+			const plane = new CoordinatePlane(
+				document.getElementById('coordinate-plane')
+			);
+			plane.initFromJson(data);
+		})
+		.catch((err) => console.error('Failed to load test.json:', err));
+});

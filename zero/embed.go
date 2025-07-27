@@ -2,6 +2,7 @@ package zero
 
 import (
 	_ "embed"
+	"encoding/json"
 	"os"
 )
 
@@ -25,7 +26,7 @@ type Embed interface {
 	CoordinateJS() string
 	OneJS() string
 	OneCSS(path string) string
-	TestJSON() string
+	TestJSON() []Coordinate
 }
 
 type embed struct{}
@@ -50,9 +51,12 @@ func (a *embed) OneCSS(path string) string {
 	return oneCSS + "\n" + string(data)
 }
 
-func (a *embed) TestJSON() string {
+// UnmarshalTestJSON loads the embedded testJSON into a []Coordinate
+func (a *embed) TestJSON() []Coordinate {
 	if testJSON == "" {
-		return "{}"
+		return nil
 	}
-	return testJSON
+	var coords []Coordinate
+	json.Unmarshal([]byte(testJSON), &coords)
+	return coords
 }

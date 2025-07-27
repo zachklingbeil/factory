@@ -3,7 +3,6 @@ package one
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"mime"
 	"net/http"
 	"os"
@@ -11,19 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
-
-func (o *One) NewRouter() *mux.Router {
-	router := mux.NewRouter().StrictSlash(true)
-	router.Use(o.corsMiddleware())
-	go func() {
-		log.Println(":1001")
-		http.ListenAndServe(":1001", router)
-	}()
-	return router
-}
 
 func (o *One) Circuit() {
 	o.Path("/").HandlerFunc(o.servePathless)
@@ -88,14 +76,6 @@ func (o *One) serveFrame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Fprint(w, *frame)
-}
-
-func (o *One) corsMiddleware() mux.MiddlewareFunc {
-	return handlers.CORS(
-		handlers.AllowedHeaders([]string{"X-Requested-With", "X-API-KEY", "X-FRAMES", "Content-Type", "Peer", "Cache-Control", "Connection", "Authorization"}),
-		handlers.AllowedOrigins([]string{"*"}),
-		handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"}),
-	)
 }
 
 // Walk directory and load files into memory, determine Content-Type based on file extension. Register route/<prefix/<file without extension>.

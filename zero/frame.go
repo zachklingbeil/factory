@@ -9,7 +9,7 @@ import (
 )
 
 type Frame interface {
-	Pathless()
+	Pathless(cssPath string)
 	Build(class string, elements ...One) *One
 	BuildFrame(class string, elements ...One)
 	JS(js string) One
@@ -74,7 +74,7 @@ func (f *frame) GetPathless() *One {
 	return f.pathless
 }
 
-func (f *frame) Pathless() {
+func (f *frame) Pathless(cssPath string) {
 	var html strings.Builder
 	html.WriteString("<!DOCTYPE html>\n")
 	html.WriteString("<html lang=\"en\">\n")
@@ -84,7 +84,7 @@ func (f *frame) Pathless() {
 	html.WriteString("  <title>hello universe</title>\n")
 
 	html.WriteString("  <style>\n")
-	html.WriteString(f.OneCSS())
+	html.WriteString(f.OneCSS(cssPath))
 	html.WriteString("\n  </style>\n")
 
 	html.WriteString("  <script>\n")

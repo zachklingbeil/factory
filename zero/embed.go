@@ -2,6 +2,7 @@ package zero
 
 import (
 	_ "embed"
+	"os"
 )
 
 //go:embed embed/coordinate.css
@@ -20,7 +21,7 @@ type Embed interface {
 	CoordinateCSS() string
 	CoordinateJS() string
 	OneJS() string
-	OneCSS() string
+	OneCSS(path string) string
 }
 
 type embed struct{}
@@ -32,4 +33,15 @@ func NewEmbed() Embed {
 func (a *embed) CoordinateCSS() string { return coordinateCSS }
 func (a *embed) CoordinateJS() string  { return coordinateJS }
 func (a *embed) OneJS() string         { return oneJS }
-func (a *embed) OneCSS() string        { return oneCSS }
+
+// OneCSS returns the embedded oneCSS plus the contents of the file at path (if provided)
+func (a *embed) OneCSS(path string) string {
+	if path == "" {
+		return oneCSS
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return oneCSS
+	}
+	return oneCSS + "\n" + string(data)
+}

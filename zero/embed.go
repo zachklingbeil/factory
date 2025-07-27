@@ -3,14 +3,12 @@ package zero
 import (
 	_ "embed"
 	"encoding/json"
+	"html/template"
 	"os"
 )
 
-//go:embed embed/coordinate.css
-var coordinateCSS string
-
-//go:embed embed/coordinate.js
-var coordinateJS string
+//go:embed embed/coordinate.html
+var coordinatePlane string
 
 //go:embed embed/one.js
 var oneJS string
@@ -22,8 +20,7 @@ var oneCSS string
 var testJSON string
 
 type Embed interface {
-	CoordinateCSS() string
-	CoordinateJS() string
+	NewCoordinatePlane() *template.HTML
 	OneJS() string
 	OneCSS(path string) string
 	TestJSON() []Coordinate
@@ -35,9 +32,12 @@ func NewEmbed() Embed {
 	return &embed{}
 }
 
-func (a *embed) CoordinateCSS() string { return coordinateCSS }
-func (a *embed) CoordinateJS() string  { return coordinateJS }
-func (a *embed) OneJS() string         { return oneJS }
+// CoordinatePlane returns the embedded coordinate plane HTML
+func (a *embed) NewCoordinatePlane() *template.HTML {
+	return (*template.HTML)(&coordinatePlane)
+}
+
+func (a *embed) OneJS() string { return oneJS }
 
 // OneCSS returns the embedded oneCSS plus the contents of the file at path (if provided)
 func (a *embed) OneCSS(path string) string {

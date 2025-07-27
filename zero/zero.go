@@ -130,24 +130,8 @@ func (f *zero) CSS(css string) One {
 }
 
 func (f *zero) CoordinatePlane() {
-	var b strings.Builder
-	b.WriteString(`<style>`)
-	b.WriteString(f.CoordinateCSS())
-	b.WriteString(`</style>`)
-	b.WriteString(`<script>`)
-	b.WriteString(f.CoordinateJS())
-	b.WriteString(`
-
-fetch("/api/test")
-  .then(r => r.json())
-  .then(data => {
-    const plane = new CoordinatePlane(document.getElementById("one"));
-    plane.initFromJson(data);
-  })
-  .catch(err => console.error("Failed to load test.json:", err));
-`)
-	b.WriteString(`</script>`)
-	one := One(template.HTML(b.String()))
+	planeHTML := f.NewCoordinatePlane()
+	one := One(*planeHTML)
 	f.frames = append(f.frames, &one)
 	f.count++
 }

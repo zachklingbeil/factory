@@ -74,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		.then((data) => {
 			const plane = new CoordinatePlane(document.getElementById('one'));
 			plane.initFromJson(data);
+			console.log(data);
 		})
 		.catch((err) => console.error('Failed to load test.json:', err));
 });

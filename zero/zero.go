@@ -130,8 +130,9 @@ func (f *zero) CSS(css string) One {
 }
 
 func (f *zero) CoordinatePlane() {
-	planeHTML := f.NewCoordinatePlane()
-	one := One(*planeHTML)
+	var b strings.Builder
+	b.WriteString(`<div class="coordinate-plane" id="coordinate-plane"></div>`)
+	one := One(template.HTML(b.String()))
 	f.frames = append(f.frames, &one)
 	f.count++
 }

@@ -134,9 +134,18 @@ func (f *zero) CoordinatePlane() {
 	b.WriteString(`<style>`)
 	b.WriteString(f.CoordinateCSS())
 	b.WriteString(`</style>`)
-	b.WriteString(`<div class="coordinate-plane"></div>`)
 	b.WriteString(`<script>`)
 	b.WriteString(f.CoordinateJS())
+	b.WriteString(`
+
+fetch("/api/test")
+  .then(r => r.json())
+  .then(data => {
+    const plane = new CoordinatePlane(document.getElementById("one"));
+    plane.initFromJson(data);
+  })
+  .catch(err => console.error("Failed to load test.json:", err));
+`)
 	b.WriteString(`</script>`)
 	one := One(template.HTML(b.String()))
 	f.frames = append(f.frames, &one)

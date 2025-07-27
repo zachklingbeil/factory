@@ -4,8 +4,7 @@ class CoordinatePlane {
 	}
 
 	initFromJson(coordinates) {
-		if (!Array.isArray(coordinates))
-			coordinates = coordinates.coordinates || [];
+		// Always expect an array of {x, y, z}
 		this.nRows = Math.max(...coordinates.map((coord) => coord.y)) + 1;
 		this.render(coordinates);
 	}
@@ -14,9 +13,11 @@ class CoordinatePlane {
 		const axisType = x < 0 ? 'negative' : x > 0 ? 'positive' : 'label';
 		const coordinate = document.createElement('div');
 		coordinate.className = `coordinate ${axisType}`;
-		coordinate.innerHTML = Object.values(z)
-			.map((value) => `<div>${value}</div>`)
-			.join('');
+		coordinate.innerHTML = `
+            <div>${z.peer}</div>
+            <div>${z.time}</div>
+            <div>${z.value}</div>
+        `;
 		return coordinate;
 	}
 
@@ -40,11 +41,7 @@ class CoordinatePlane {
 		const labelCoordinate = coordinates.find(
 			(coord) => coord.y === rowIndex && coord.x === 0
 		);
-		labelAxis.textContent = labelCoordinate
-			? Array.isArray(labelCoordinate.z)
-				? labelCoordinate.z.join(', ')
-				: rowIndex
-			: rowIndex;
+		labelAxis.textContent = labelCoordinate ? rowIndex : rowIndex;
 
 		const positiveAxis = document.createElement('div');
 		positiveAxis.className = 'axis right';

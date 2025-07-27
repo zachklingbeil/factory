@@ -134,7 +134,7 @@ func (f *zero) CoordinatePlane() {
 	b.WriteString(`<style>`)
 	b.WriteString(f.CoordinateCSS())
 	b.WriteString(`</style>`)
-	// Remove the coordinate-plane container div
+	b.WriteString(`<div class="coordinate-plane"></div>`)
 	b.WriteString(`<script>`)
 	b.WriteString(f.CoordinateJS())
 	b.WriteString(`</script>`)

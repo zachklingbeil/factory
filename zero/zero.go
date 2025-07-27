@@ -19,7 +19,7 @@ type Zero interface {
 	GetPathless() *One
 	GetFrame(index int) *One
 	FrameCount() string
-	CoordinatePlane() One
+	CoordinatePlane()
 	Text
 	Element
 	Keybind
@@ -129,7 +129,7 @@ func (f *zero) CSS(css string) One {
 	return One(template.HTML(b.String()))
 }
 
-func (f *zero) CoordinatePlane() One {
+func (f *zero) CoordinatePlane() {
 	var b strings.Builder
 	b.WriteString(`<style>`)
 	b.WriteString(f.CoordinateCSS())
@@ -138,5 +138,7 @@ func (f *zero) CoordinatePlane() One {
 	b.WriteString(`<script>`)
 	b.WriteString(f.CoordinateJS())
 	b.WriteString(`</script>`)
-	return One(template.HTML(b.String()))
+	one := One(template.HTML(b.String()))
+	f.frames = append(f.frames, &one)
+	f.count++
 }

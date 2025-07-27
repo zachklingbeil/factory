@@ -36,8 +36,8 @@ func (o *One) xyz(prefix string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		vars := mux.Vars(r)
-		x, xOK := vars["x"]
-		y, yOK := vars["y"]
+		xStr, xOK := vars["x"]
+		yStr, yOK := vars["y"]
 
 		_, ok := o.Api[prefix]
 		if !ok {
@@ -46,11 +46,23 @@ func (o *One) xyz(prefix string) http.HandlerFunc {
 		}
 
 		var result any
+
 		switch {
 		case xOK && yOK:
-			result = o.GetZ(x, y)
+			x, errX := strconv.ParseUint(xStr, 10, 64)
+			y, errY := strconv.ParseUint(yStr, 10, 64)
+			if errX != nil || errY != nil {
+				http.Error(w, "Invalid x or y value", http.StatusBadRequest)
+				return
+			}
+			result = o.GetZ(int(x), int(y))
 		case xOK:
-			result = o.GetY(x)
+			x, err := strconv.ParseUint(xStr, 10, 64)
+			if err != nil {
+				http.Error(w, "Invalid x value", http.StatusBadRequest)
+				return
+			}
+			result = o.GetY(int(x))
 		default:
 			result = o.GetX()
 		}

@@ -1,0 +1,139 @@
+[
+	{
+		"x": -4,
+		"y": 0,
+		"z": { "peer": "dan", "value": "alpha", "time": "08:00:00" }
+	},
+	{
+		"x": -3,
+		"y": 0,
+		"z": { "peer": "sam", "value": "beta", "time": "08:30:00" }
+	},
+	{
+		"x": -2,
+		"y": 0,
+		"z": { "peer": "alice", "value": "foo", "time": "09:00:00" }
+	},
+	{
+		"x": -1,
+		"y": 0,
+		"z": { "peer": "zk", "value": "test", "time": "12:00:00" }
+	},
+	{
+		"x": 0,
+		"y": 0,
+		"z": { "peer": "center", "value": "origin", "time": "00:00:00" }
+	},
+	{
+		"x": 1,
+		"y": 0,
+		"z": { "peer": "bob", "value": "bar", "time": "15:00:00" }
+	},
+	{
+		"x": 2,
+		"y": 0,
+		"z": { "peer": "eve", "value": "baz", "time": "18:00:00" }
+	},
+	{
+		"x": 3,
+		"y": 0,
+		"z": { "peer": "tom", "value": "gamma", "time": "19:00:00" }
+	},
+	{
+		"x": 4,
+		"y": 0,
+		"z": { "peer": "jill", "value": "delta", "time": "20:00:00" }
+	},
+
+	{
+		"x": -4,
+		"y": 1,
+		"z": { "peer": "dan", "value": "alpha2", "time": "08:10:00" }
+	},
+	{
+		"x": -3,
+		"y": 1,
+		"z": { "peer": "sam", "value": "beta2", "time": "08:40:00" }
+	},
+	{
+		"x": -2,
+		"y": 1,
+		"z": { "peer": "alice", "value": "foo2", "time": "09:10:00" }
+	},
+	{
+		"x": -1,
+		"y": 1,
+		"z": { "peer": "zk", "value": "test2", "time": "12:10:00" }
+	},
+	{
+		"x": 0,
+		"y": 1,
+		"z": { "peer": "center", "value": "row1", "time": "01:00:00" }
+	},
+	{
+		"x": 1,
+		"y": 1,
+		"z": { "peer": "bob", "value": "bar2", "time": "15:10:00" }
+	},
+	{
+		"x": 2,
+		"y": 1,
+		"z": { "peer": "eve", "value": "baz2", "time": "18:10:00" }
+	},
+	{
+		"x": 3,
+		"y": 1,
+		"z": { "peer": "tom", "value": "gamma2", "time": "19:10:00" }
+	},
+	{
+		"x": 4,
+		"y": 1,
+		"z": { "peer": "jill", "value": "delta2", "time": "20:10:00" }
+	},
+
+	{
+		"x": -4,
+		"y": 2,
+		"z": { "peer": "dan", "value": "alpha3", "time": "08:20:00" }
+	},
+	{
+		"x": -3,
+		"y": 2,
+		"z": { "peer": "sam", "value": "beta3", "time": "08:50:00" }
+	},
+	{
+		"x": -2,
+		"y": 2,
+		"z": { "peer": "alice", "value": "foo3", "time": "09:20:00" }
+	},
+	{
+		"x": -1,
+		"y": 2,
+		"z": { "peer": "zk", "value": "test3", "time": "12:20:00" }
+	},
+	{
+		"x": 0,
+		"y": 2,
+		"z": { "peer": "center", "value": "row2", "time": "02:00:00" }
+	},
+	{
+		"x": 1,
+		"y": 2,
+		"z": { "peer": "bob", "value": "bar3", "time": "15:20:00" }
+	},
+	{
+		"x": 2,
+		"y": 2,
+		"z": { "peer": "eve", "value": "baz3", "time": "18:20:00" }
+	},
+	{
+		"x": 3,
+		"y": 2,
+		"z": { "peer": "tom", "value": "gamma3", "time": "19:20:00" }
+	},
+	{
+		"x": 4,
+		"y": 2,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	}
+]

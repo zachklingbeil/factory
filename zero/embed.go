@@ -17,11 +17,15 @@ var oneJS string
 //go:embed embed/one.css
 var oneCSS string
 
+//go:embed embed/test.json
+var testJSON string
+
 type Embed interface {
 	CoordinateCSS() string
 	CoordinateJS() string
 	OneJS() string
 	OneCSS(path string) string
+	TestJSON() string
 }
 
 type embed struct{}
@@ -44,4 +48,11 @@ func (a *embed) OneCSS(path string) string {
 		return oneCSS
 	}
 	return oneCSS + "\n" + string(data)
+}
+
+func (a *embed) TestJSON() string {
+	if testJSON == "" {
+		return "{}"
+	}
+	return testJSON
 }

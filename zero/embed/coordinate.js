@@ -72,7 +72,7 @@ class CoordinatePlane {
 	}
 }
 
-fetch('/api/test.json')
+fetch('/api/test')
 	.then((r) => r.json())
 	.then((data) => {
 		const plane = new CoordinatePlane(

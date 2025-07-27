@@ -4,7 +4,6 @@ class CoordinatePlane {
 	}
 
 	initFromJson(coordinates) {
-		// Always expect an array of {x, y, z}
 		this.nRows = Math.max(...coordinates.map((coord) => coord.y)) + 1;
 		this.render(coordinates);
 	}
@@ -73,9 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	fetch('/api/test')
 		.then((r) => r.json())
 		.then((data) => {
-			const plane = new CoordinatePlane(
-				document.getElementById('coordinate-plane')
-			);
+			const plane = new CoordinatePlane(document.getElementById('one'));
 			plane.initFromJson(data);
 		})
 		.catch((err) => console.error('Failed to load test.json:', err));

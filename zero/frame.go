@@ -9,7 +9,7 @@ import (
 )
 
 type Frame interface {
-	Pathless(css, js string)
+	Pathless()
 	Build(class string, elements ...One) *One
 	BuildFrame(class string, elements ...One)
 	JS(js string) One
@@ -17,16 +17,19 @@ type Frame interface {
 	GetPathless() *One
 	GetFrame(index int) *One
 	FrameCount() string
+	CoordinatePlane() One
 	Text
 	Element
 	Keybind
+	Embed
 }
 
 // --- frame Implementation ---
 type frame struct {
-	Text
-	Element
-	Keybind
+	*text
+	*element
+	*keybind
+	*embed
 	frames   []*One
 	count    uint
 	pathless *One
@@ -34,10 +37,11 @@ type frame struct {
 
 func NewFrame() Frame {
 	return &frame{
-		Text:     NewText(),
-		Element:  NewElement(),
+		text:     NewText().(*text),
+		element:  NewElement().(*element),
+		keybind:  &keybind{},
+		embed:    NewEmbed().(*embed),
 		frames:   make([]*One, 0),
-		Keybind:  &keybind{},
 		count:    0,
 		pathless: nil,
 	}
@@ -70,15 +74,7 @@ func (f *frame) GetPathless() *One {
 	return f.pathless
 }
 
-func (f *frame) Pathless(css, js string) {
-	var c, j string
-	if css != "" {
-		c = f.FileToString(css)
-	}
-	if js != "" {
-		j = f.FileToString(js)
-	}
-
+func (f *frame) Pathless() {
 	var html strings.Builder
 	html.WriteString("<!DOCTYPE html>\n")
 	html.WriteString("<html lang=\"en\">\n")
@@ -86,16 +82,15 @@ func (f *frame) Pathless(css, js string) {
 	html.WriteString("  <meta charset=\"UTF-8\" />\n")
 	html.WriteString("  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n")
 	html.WriteString("  <title>hello universe</title>\n")
-	if c != "" {
-		html.WriteString("  <style>\n")
-		html.WriteString(c)
-		html.WriteString("\n  </style>\n")
-	}
-	if j != "" {
-		html.WriteString("  <script>\n")
-		html.WriteString(j)
-		html.WriteString("\n  </script>\n")
-	}
+
+	html.WriteString("  <style>\n")
+	html.WriteString(f.OneCSS())
+	html.WriteString("\n  </style>\n")
+
+	html.WriteString("  <script>\n")
+	html.WriteString(f.OneJS())
+	html.WriteString("\n  </script>\n")
+
 	html.WriteString("</head>\n")
 	html.WriteString("<body>\n")
 	html.WriteString("</body>\n")
@@ -126,5 +121,17 @@ func (f *frame) CSS(css string) One {
 	b.WriteString(`<style>`)
 	b.WriteString(css)
 	b.WriteString(`</style>`)
+	return One(template.HTML(b.String()))
+}
+
+func (f *frame) CoordinatePlane() One {
+	var b strings.Builder
+	b.WriteString(`<style>`)
+	b.WriteString(f.CoordinateCSS())
+	b.WriteString(`</style>`)
+	b.WriteString(`<div class="coordinate-plane" id="coordinate-plane"></div>`)
+	b.WriteString(`<script>`)
+	b.WriteString(f.CoordinateJS())
+	b.WriteString(`</script>`)
 	return One(template.HTML(b.String()))
 }

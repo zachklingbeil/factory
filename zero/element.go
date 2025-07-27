@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"html"
 	"html/template"
-	"os"
 	"strings"
 )
 
@@ -21,9 +20,6 @@ type Element interface {
 	Nav(attrs map[string]string) One
 	Canvas(id string) One
 	Table(cols uint8, rows uint64, data [][]string) One
-	FileToString(path string) string
-	CoordinatePlane() One // <-- Add this line
-
 }
 
 // --- element Implementation ---
@@ -31,14 +27,6 @@ type element struct{}
 
 func NewElement() Element {
 	return &element{}
-}
-
-func (e *element) FileToString(path string) string {
-	file, err := os.ReadFile(path)
-	if err != nil {
-		return ""
-	}
-	return string(file)
 }
 
 func (e *element) Div(class string) One {
@@ -107,8 +95,4 @@ func (e *element) Table(cols uint8, rows uint64, data [][]string) One {
 	}
 	b.WriteString("</table>")
 	return One(template.HTML(b.String()))
-}
-
-func (e *element) CoordinatePlane() One {
-	return One(template.HTML(`<div class="coordinate-plane" id="coordinate-plane"></div>`))
 }

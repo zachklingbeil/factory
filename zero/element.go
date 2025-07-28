@@ -102,7 +102,7 @@ func (e *element) coordinatePlane(css, js string) One {
 	b.WriteString(`<style>`)
 	b.WriteString(css)
 	b.WriteString(`</style>`)
-	b.WriteString(`<div class="coordinate-plane" id="coordinate-plane"></div>`)
+	b.WriteString(`<div class="coordinate-plane"></div>`)
 	b.WriteString(`<script>`)
 	b.WriteString(js)
 	b.WriteString(`</script>`)

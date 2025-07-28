@@ -24,7 +24,7 @@
 .axis.right {
 	justify-content: flex-start;
 }
-.axis.left .coordinate-grid {
+.axis.left .coordinate {
 	display: flex;
 	justify-content: flex-end;
 	width: 100%;

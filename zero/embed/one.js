@@ -138,9 +138,9 @@ class CoordinatePlane {
 		}
 	}
 }
-document.addEventListener('DOMContentLoaded', async () => {
+(async () => {
 	try {
-		const response = await fetch(state.baseURL + '/api/test');
+		const response = await fetch('/api/test');
 		const data = await response.json();
 		const plane = new CoordinatePlane(
 			document.getElementById('coordinate-plane')
@@ -149,4 +149,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 	} catch (err) {
 		console.error('Failed to load test.json:', err);
 	}
-});
+})();

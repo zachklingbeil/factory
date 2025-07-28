@@ -10,6 +10,9 @@ import (
 //go:embed embed/coordinate.html
 var coordinatePlane string
 
+//go:embed embed/coordinate.css
+var coordinateCSS string
+
 //go:embed embed/one.js
 var oneJS string
 
@@ -24,6 +27,7 @@ type Embed interface {
 	OneJS() string
 	OneCSS(path string) string
 	TestJSON() []Coordinate
+	CoordinateCSS() string
 }
 
 type embed struct{}
@@ -59,4 +63,12 @@ func (a *embed) TestJSON() []Coordinate {
 	var coords []Coordinate
 	json.Unmarshal([]byte(testJSON), &coords)
 	return coords
+}
+
+// CoordinateCss returns the embedded coordinate CSS
+func (a *embed) CoordinateCSS() string {
+	if coordinateCSS == "" {
+		return ""
+	}
+	return coordinateCSS
 }

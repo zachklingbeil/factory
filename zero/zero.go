@@ -20,6 +20,8 @@ type Zero interface {
 	GetFrame(index int) *One
 	FrameCount() string
 	CoordinatePlane()
+	InjectFrame(index int) string
+
 	Text
 	Element
 	Keybind
@@ -69,6 +71,12 @@ func (f *zero) Build(class string, elements ...One) *One {
 	return &result
 }
 
+func (f *zero) InjectFrame(index int) string {
+	if index < 0 || index >= len(f.frames) {
+		return ""
+	}
+	return string(*f.frames[index])
+}
 func (f *zero) BuildFrame(class string, elements ...One) {
 	zero := f.Build(class, elements...)
 	f.frames = append(f.frames, zero)
@@ -79,7 +87,7 @@ func (f *zero) GetPathless() *One {
 	return f.pathless
 }
 
-func (f *zero) Pathless(cssPath string) {
+func (f *zero) Pathless(cssPath string, frameIndex int) {
 	var html strings.Builder
 	html.WriteString("<!DOCTYPE html>\n")
 	html.WriteString("<html lang=\"en\">\n")
@@ -98,6 +106,7 @@ func (f *zero) Pathless(cssPath string) {
 
 	html.WriteString("</head>\n")
 	html.WriteString("<body>\n")
+	html.WriteString(f.InjectFrame(frameIndex)) // inject the frame here
 	html.WriteString("</body>\n")
 	html.WriteString("</html>")
 	result := One(template.HTML(html.String()))
@@ -131,7 +140,24 @@ func (f *zero) CSS(css string) One {
 
 func (f *zero) CoordinatePlane() {
 	var b strings.Builder
+	b.WriteString(`<style>`)
+	b.WriteString(f.CoordinateCSS())
+	b.WriteString(`</style>`)
 	b.WriteString(`<div class="coordinate-plane" id="coordinate-plane"></div>`)
+	b.WriteString(`<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const response = await fetch('/api/test');
+        const data = await response.json();
+        const plane = new CoordinatePlane(
+            document.getElementById('coordinate-plane')
+        );
+        plane.initFromJson(data);
+    } catch (err) {
+        console.error('Failed to load test.json:', err);
+    }
+});
+</script>`)
 	one := One(template.HTML(b.String()))
 	f.frames = append(f.frames, &one)
 	f.count++

@@ -2,7 +2,10 @@
 	flex: 1;
 	overflow-y: auto;
 	overflow-x: hidden;
+	width: 100vw;
+	height: 100vh;
 }
+
 .row {
 	display: grid;
 	grid-template-columns: 45vw 10vw 45vw;
@@ -11,6 +14,7 @@
 	padding: 0.5vh 0;
 	overflow: visible;
 }
+
 .axis {
 	height: 100%;
 	font-size: 2rem;
@@ -20,21 +24,33 @@
 	padding: 0;
 	border: none;
 }
+
 .axis.left {
 	justify-content: flex-end;
 }
+
 .axis.right {
 	justify-content: flex-start;
 }
+
+/* Use flex for coordinate-grid so alignment works */
 .coordinate-grid {
-	display: grid;
-	grid-auto-flow: column;
-	width: max-content;
+	display: flex;
+	width: 100%;
 	height: 100%;
 	gap: 0.2em;
 	border: none;
 	overflow-x: auto;
 }
+
+.axis.left .coordinate-grid {
+	justify-content: flex-end;
+}
+
+.axis.right .coordinate-grid {
+	justify-content: flex-start;
+}
+
 .coordinate {
 	width: 100px;
 	display: flex;
@@ -50,16 +66,20 @@
 	white-space: normal;
 	overflow-wrap: anywhere;
 }
+
 .coordinate:hover {
 	background: #444444;
 	border-color: #888888;
 }
+
 .coordinate.negative {
 	border: medium solid red;
 }
+
 .coordinate.positive {
 	border: medium solid blue;
 }
+
 .label {
 	display: flex;
 	align-items: center;

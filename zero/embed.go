@@ -7,6 +7,9 @@ import (
 	"os"
 )
 
+//go:embed embed/component.html
+var componentHTML string
+
 //go:embed embed/coordinate.html
 var coordinatePlane string
 
@@ -32,6 +35,7 @@ type Embed interface {
 	TestJSON() []Coordinate
 	CoordinateCSS() string
 	CoordinateJS() string
+	ComponentHTML() string
 }
 
 type embed struct{}
@@ -83,4 +87,12 @@ func (a *embed) CoordinateJS() string {
 		return ""
 	}
 	return coordinateJS
+}
+
+// ComeponentHTML returns the embedded component HTML
+func (a *embed) ComponentHTML() string {
+	if componentHTML == "" {
+		return ""
+	}
+	return componentHTML
 }

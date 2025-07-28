@@ -19,7 +19,6 @@
 	align-items: stretch;
 	padding: 0;
 	border: none;
-	overflow-x: auto;
 	gap: 0.2em;
 }
 .axis.negative {
@@ -29,6 +28,7 @@
 	justify-content: flex-start;
 }
 .coordinate {
+	overflow-x: auto;
 	width: 100px;
 	display: flex;
 	align-items: center;

@@ -19,7 +19,7 @@ type Zero interface {
 	GetPathless() *One
 	GetFrame(index int) *One
 	FrameCount() string
-	CoordinatePlane()
+	CoordinatePlane(coords []Coord)
 	Text
 	Element
 	Keybind
@@ -129,8 +129,69 @@ func (f *zero) CSS(css string) One {
 	return One(template.HTML(b.String()))
 }
 
-func (f *zero) CoordinatePlane() {
-	final := One(template.HTML(f.ComponentHTML()))
+type Coord struct {
+	X int
+	Y int
+	Z struct {
+		Peer  string
+		Time  string
+		Value string
+	}
+}
+
+func (f *zero) CoordinatePlane(coords []Coord) {
+	var b strings.Builder
+	b.WriteString(f.CoordinateCSS())
+	b.WriteString(`<div class="coordinate-plane" id="coordinate-plane">`)
+	nRows := 0
+	for _, c := range coords {
+		if c.Y+1 > nRows {
+			nRows = c.Y + 1
+		}
+	}
+	for row := 0; row < nRows; row++ {
+		b.WriteString(`<div class="row">`)
+		// Negative axis
+		b.WriteString(`<div class="axis left"><div class="coordinate-grid">`)
+		for _, c := range coords {
+			if c.Y == row && c.X < 0 {
+				b.WriteString(createCoordinateHTML(c))
+			}
+		}
+		b.WriteString(`</div></div>`)
+		// Label
+		b.WriteString(`<div class="label">`)
+		label := row
+		b.WriteString(template.HTMLEscapeString(fmt.Sprintf("%d", label)))
+		b.WriteString(`</div>`)
+		// Positive axis
+		b.WriteString(`<div class="axis right"><div class="coordinate-grid">`)
+		for _, c := range coords {
+			if c.Y == row && c.X > 0 {
+				b.WriteString(createCoordinateHTML(c))
+			}
+		}
+		b.WriteString(`</div></div>`)
+		b.WriteString(`</div>`)
+	}
+	b.WriteString(`</div>`)
+	final := One(template.HTML(b.String()))
 	f.frames = append(f.frames, &final)
 	f.count++
+}
+
+func createCoordinateHTML(c Coord) string {
+	axisType := "label"
+	if c.X < 0 {
+		axisType = "negative"
+	} else if c.X > 0 {
+		axisType = "positive"
+	}
+	return fmt.Sprintf(
+		`<div class="coordinate %s"><div>%s</div><div>%s</div><div>%s</div></div>`,
+		axisType,
+		template.HTMLEscapeString(c.Z.Peer),
+		template.HTMLEscapeString(c.Z.Time),
+		template.HTMLEscapeString(c.Z.Value),
+	)
 }

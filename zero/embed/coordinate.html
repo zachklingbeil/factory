@@ -79,11 +79,19 @@
 	class CoordinatePlane {
 		constructor(container) {
 			this.container = container;
+			this.fetchAndRender();
 		}
 
-		initFromJson(coordinates) {
-			this.nRows = Math.max(...coordinates.map((coord) => coord.y)) + 1;
-			this.render(coordinates);
+		async fetchAndRender() {
+			try {
+				const response = await fetch('/api/test');
+				if (!response.ok) throw new Error();
+				const data = await response.json();
+				this.nRows = Math.max(...data.map((coord) => coord.y)) + 1;
+				this.render(data);
+			} catch (err) {
+				console.error('Failed to load test.json:', err);
+			}
 		}
 
 		createCoordinate({ x, y, z }) {
@@ -145,15 +153,8 @@
 			}
 		}
 	}
+
 	document.addEventListener('DOMContentLoaded', () => {
-		fetch('/api/test')
-			.then((r) => r.json())
-			.then((data) => {
-				const plane = new CoordinatePlane(
-					document.getElementById('coordinate-plane')
-				);
-				plane.initFromJson(data);
-			})
-			.catch((err) => console.error('Failed to load test.json:', err));
+		new CoordinatePlane(document.getElementById('coordinate-plane'));
 	});
 </script>

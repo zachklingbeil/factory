@@ -96,3 +96,15 @@ func (e *element) Table(cols uint8, rows uint64, data [][]string) One {
 	b.WriteString("</table>")
 	return One(template.HTML(b.String()))
 }
+
+func (e *element) coordinatePlane(css, js string) One {
+	var b strings.Builder
+	b.WriteString(`<style>`)
+	b.WriteString(css)
+	b.WriteString(`</style>`)
+	b.WriteString(`<div class="coordinate-plane" id="coordinate-plane"></div>`)
+	b.WriteString(`<script>`)
+	b.WriteString(js)
+	b.WriteString(`</script>`)
+	return One(template.HTML(b.String()))
+}

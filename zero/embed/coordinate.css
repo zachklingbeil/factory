@@ -1,6 +1,5 @@
 .coordinate-plane {
-	width: 100vw;
-	height: 100vh;
+	flex: 1;
 	overflow-y: auto;
 	overflow-x: hidden;
 }

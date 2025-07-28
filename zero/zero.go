@@ -142,8 +142,7 @@ type Coord struct {
 func (f *zero) CoordinatePlane(coords []Coord) {
 	var b strings.Builder
 	b.WriteString(`<style>`)
-	b.WriteString("")
-	// b.WriteString(f.CoordinateCSS())
+	b.WriteString(f.CoordinateCSS())
 	b.WriteString(`</style>`)
 	b.WriteString(`<div class="coordinate-plane" id="coordinate-plane">`)
 	nRows := 0

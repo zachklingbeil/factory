@@ -140,7 +140,7 @@ class CoordinatePlane {
 }
 document.addEventListener('DOMContentLoaded', async () => {
 	try {
-		const response = await fetch(baseURL + '/api/test');
+		const response = await fetch(state.baseURL + '/api/test');
 		const data = await response.json();
 		const plane = new CoordinatePlane(
 			document.getElementById('coordinate-plane')

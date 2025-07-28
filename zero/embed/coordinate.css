@@ -1,8 +1,8 @@
 .coordinate-plane {
 	width: 100vw;
 	height: 100vh;
-	overflow: hidden;
 	overflow-y: auto;
+	overflow-x: hidden;
 }
 .row {
 	display: grid;
@@ -10,6 +10,7 @@
 	width: 100vw;
 	height: 10vh;
 	padding: 0.5vh 0;
+	overflow: visible;
 }
 .axis {
 	height: 100%;
@@ -33,6 +34,7 @@
 	height: 100%;
 	gap: 0.2em;
 	border: none;
+	overflow-x: auto;
 }
 .coordinate {
 	width: 100px;

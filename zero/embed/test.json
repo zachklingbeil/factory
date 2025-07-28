@@ -135,5 +135,25 @@
 		"x": 4,
 		"y": 2,
 		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": 5,
+		"y": 2,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": 6,
+		"y": 2,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": 7,
+		"y": 2,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": 8,
+		"y": 2,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
 	}
 ]

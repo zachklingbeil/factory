@@ -6,15 +6,15 @@
 .row {
 	display: grid;
 	grid-template-columns: 45vw 10vw 45vw;
-	width: 100vw;
 	height: 10vh;
 	padding: 0.5vh 0;
-	overflow: visible;
+	overflow-x: auto; /* enable horizontal scroll for row */
+	overflow-y: visible;
 }
 .axis {
 	height: 100%;
 	font-size: 2rem;
-	overflow-x: auto;
+	overflow-x: visible;
 	display: flex;
 	align-items: stretch;
 	padding: 0;
@@ -26,14 +26,13 @@
 .axis.right {
 	justify-content: flex-start;
 }
-/* Use flex for coordinate-grid so alignment works */
 .coordinate-grid {
 	display: flex;
-	width: 100%;
+	width: max-content; /* allow grid to grow horizontally */
 	height: 100%;
 	gap: 0.2em;
 	border: none;
-	overflow-x: auto;
+	overflow-x: visible;
 }
 .axis.left .coordinate-grid {
 	justify-content: flex-end;

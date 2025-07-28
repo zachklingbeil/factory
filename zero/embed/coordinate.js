@@ -1,6 +1,5 @@
 class CoordinatePlane {
-	constructor(container) {
-		this.container = container;
+	constructor() {
 		this.fetchAndRender();
 	}
 
@@ -10,72 +9,62 @@ class CoordinatePlane {
 			if (!response.ok) throw new Error();
 			const data = await response.json();
 			this.nRows = Math.max(...data.map((coord) => coord.y)) + 1;
-			this.render(data);
+			const html = this.render(data);
+			updateBody(html);
 		} catch (err) {
 			console.error('Failed to load test.json:', err);
+			updateBody('');
 		}
 	}
 
 	createCoordinate({ x, y, z }) {
 		const axisType = x < 0 ? 'negative' : x > 0 ? 'positive' : 'label';
-		const coordinate = document.createElement('div');
-		coordinate.className = `coordinate ${axisType}`;
-		coordinate.innerHTML = `
-            <div>${z.peer}</div>
-            <div>${z.time}</div>
-            <div>${z.value}</div>
+		return `
+            <div class="coordinate ${axisType}">
+                <div>${z.peer}</div>
+                <div>${z.time}</div>
+                <div>${z.value}</div>
+            </div>
         `;
-		return coordinate;
 	}
 
 	createRow(rowIndex, coordinates) {
-		const row = document.createElement('div');
-		row.className = 'row';
-
-		const negativeAxis = document.createElement('div');
-		negativeAxis.className = 'axis left';
-		const negativeGrid = document.createElement('div');
-		negativeGrid.className = 'coordinate-grid';
-		coordinates
+		const negativeCoords = coordinates
 			.filter((coord) => coord.y === rowIndex && coord.x < 0)
-			.forEach((coord) =>
-				negativeGrid.appendChild(this.createCoordinate(coord))
-			);
-		negativeAxis.appendChild(negativeGrid);
-
-		const labelAxis = document.createElement('div');
-		labelAxis.className = 'label';
+			.map((coord) => this.createCoordinate(coord))
+			.join('');
+		const positiveCoords = coordinates
+			.filter((coord) => coord.y === rowIndex && coord.x > 0)
+			.map((coord) => this.createCoordinate(coord))
+			.join('');
 		const labelCoordinate = coordinates.find(
 			(coord) => coord.y === rowIndex && coord.x === 0
 		);
-		labelAxis.textContent = labelCoordinate ? rowIndex : rowIndex;
+		const label = labelCoordinate ? rowIndex : rowIndex;
 
-		const positiveAxis = document.createElement('div');
-		positiveAxis.className = 'axis right';
-		const positiveGrid = document.createElement('div');
-		positiveGrid.className = 'coordinate-grid';
-		coordinates
-			.filter((coord) => coord.y === rowIndex && coord.x > 0)
-			.forEach((coord) =>
-				positiveGrid.appendChild(this.createCoordinate(coord))
-			);
-		positiveAxis.appendChild(positiveGrid);
-
-		row.appendChild(negativeAxis);
-		row.appendChild(labelAxis);
-		row.appendChild(positiveAxis);
-
-		return row;
+		return `
+            <div class="row">
+                <div class="axis left">
+                    <div class="coordinate-grid">${negativeCoords}</div>
+                </div>
+                <div class="label">${label}</div>
+                <div class="axis right">
+                    <div class="coordinate-grid">${positiveCoords}</div>
+                </div>
+            </div>
+        `;
 	}
 
 	render(coordinates) {
-		this.container.innerHTML = '';
+		let html = `<div class="coordinate-plane" id="coordinate-plane">`;
 		for (let row = 0; row < this.nRows; row++) {
-			this.container.appendChild(this.createRow(row, coordinates));
+			html += this.createRow(row, coordinates);
 		}
+		html += `</div>`;
+		return html;
 	}
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-	new CoordinatePlane(document.getElementById('coordinate-plane'));
+	new CoordinatePlane();
 });

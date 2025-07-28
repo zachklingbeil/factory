@@ -1,3 +1,13 @@
+function updateBody(html) {
+	let oneDiv = document.getElementById('one');
+	if (!oneDiv) {
+		oneDiv = document.createElement('div');
+		oneDiv.id = 'one';
+		document.body.appendChild(oneDiv);
+	}
+	oneDiv.innerHTML = html;
+}
+
 class CoordinatePlane {
 	constructor() {
 		this.fetchAndRender();

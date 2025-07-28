@@ -32,7 +32,7 @@ type Embed interface {
 	NewCoordinatePlane() *template.HTML
 	OneJS() string
 	OneCSS(path string) string
-	TestJSON() []Coordinate
+	TestJSON() []Coord
 	CoordinateCSS() string
 	CoordinateJS() string
 	ComponentHTML() string
@@ -64,11 +64,11 @@ func (a *embed) OneCSS(path string) string {
 }
 
 // UnmarshalTestJSON loads the embedded testJSON into a []Coordinate
-func (a *embed) TestJSON() []Coordinate {
+func (a *embed) TestJSON() []Coord {
 	if testJSON == "" {
 		return nil
 	}
-	var coords []Coordinate
+	var coords []Coord
 	json.Unmarshal([]byte(testJSON), &coords)
 	return coords
 }

@@ -335,5 +335,185 @@
 		"x": -8,
 		"y": 6,
 		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": 0,
+		"y": 7,
+		"z": { "peer": "center", "value": "row2", "time": "02:00:00" }
+	},
+	{
+		"x": -1,
+		"y": 7,
+		"z": { "peer": "bob", "value": "bar3", "time": "15:20:00" }
+	},
+	{
+		"x": -2,
+		"y": 7,
+		"z": { "peer": "eve", "value": "baz3", "time": "18:20:00" }
+	},
+	{
+		"x": -3,
+		"y": 7,
+		"z": { "peer": "tom", "value": "gamma3", "time": "19:20:00" }
+	},
+	{
+		"x": -4,
+		"y": 7,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": -5,
+		"y": 7,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": -6,
+		"y": 7,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": -7,
+		"y": 7,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": -8,
+		"y": 7,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": 0,
+		"y": 8,
+		"z": { "peer": "center", "value": "row2", "time": "02:00:00" }
+	},
+	{
+		"x": -1,
+		"y": 8,
+		"z": { "peer": "bob", "value": "bar3", "time": "15:20:00" }
+	},
+	{
+		"x": -2,
+		"y": 8,
+		"z": { "peer": "eve", "value": "baz3", "time": "18:20:00" }
+	},
+	{
+		"x": -3,
+		"y": 8,
+		"z": { "peer": "tom", "value": "gamma3", "time": "19:20:00" }
+	},
+	{
+		"x": -4,
+		"y": 8,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": -5,
+		"y": 8,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": -6,
+		"y": 8,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": -7,
+		"y": 8,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": -8,
+		"y": 8,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": 0,
+		"y": 9,
+		"z": { "peer": "center", "value": "row2", "time": "02:00:00" }
+	},
+	{
+		"x": 1,
+		"y": 9,
+		"z": { "peer": "bob", "value": "bar3", "time": "15:20:00" }
+	},
+	{
+		"x": 2,
+		"y": 9,
+		"z": { "peer": "eve", "value": "baz3", "time": "18:20:00" }
+	},
+	{
+		"x": 3,
+		"y": 9,
+		"z": { "peer": "tom", "value": "gamma3", "time": "19:20:00" }
+	},
+	{
+		"x": 4,
+		"y": 9,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": 5,
+		"y": 9,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": 6,
+		"y": 9,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": 7,
+		"y": 9,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": 8,
+		"y": 9,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": 0,
+		"y": 10,
+		"z": { "peer": "center", "value": "row2", "time": "02:00:00" }
+	},
+	{
+		"x": -1,
+		"y": 10,
+		"z": { "peer": "bob", "value": "bar3", "time": "15:20:00" }
+	},
+	{
+		"x": -2,
+		"y": 10,
+		"z": { "peer": "eve", "value": "baz3", "time": "18:20:00" }
+	},
+	{
+		"x": -3,
+		"y": 10,
+		"z": { "peer": "tom", "value": "gamma3", "time": "19:20:00" }
+	},
+	{
+		"x": -4,
+		"y": 10,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": -5,
+		"y": 10,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": -6,
+		"y": 10,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": -7,
+		"y": 10,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
+	},
+	{
+		"x": -8,
+		"y": 10,
+		"z": { "peer": "jill", "value": "delta3", "time": "20:20:00" }
 	}
 ]

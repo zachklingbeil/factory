@@ -20,26 +20,26 @@
 	padding: 0;
 	border: none;
 }
-
+.axis.left {
+	justify-content: flex-end;
+}
 .axis.right {
 	justify-content: flex-start;
 }
-.axis.left .coordinate {
-	display: flex;
-	justify-content: flex-end;
-	width: 100%;
-	gap: 0.2em;
-	border: none;
-	overflow-x: auto;
-}
+/* Use flex for coordinate-grid so alignment works */
 .coordinate-grid {
-	display: grid;
-	grid-auto-flow: column;
-	width: max-content;
+	display: flex;
+	width: 100%;
 	height: 100%;
 	gap: 0.2em;
 	border: none;
 	overflow-x: auto;
+}
+.axis.left .coordinate-grid {
+	justify-content: flex-end;
+}
+.axis.right .coordinate-grid {
+	justify-content: flex-start;
 }
 .coordinate {
 	width: 100px;

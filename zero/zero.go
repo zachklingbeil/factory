@@ -141,9 +141,9 @@ type Coord struct {
 
 func (f *zero) CoordinatePlane(coords []Coord) {
 	var b strings.Builder
-	b.WriteString(`<style>`)
-	b.WriteString(f.CoordinateCSS())
-	b.WriteString(`</style>`)
+	// b.WriteString(`<style>`)
+	// b.WriteString(f.CoordinateCSS())
+	// b.WriteString(`</style>`)
 	b.WriteString(renderPlane(coords))
 	final := One(template.HTML(b.String()))
 	f.frames = append(f.frames, &final)

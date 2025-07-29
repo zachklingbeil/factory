@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-func (f *zero) BuildFrameFromHTMLFile() error {
-	content, err := os.ReadFile("./embed/coordinate.html")
+func (f *zero) BuildFrameFromHTMLFile(filePath string) error {
+	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return err
 	}

@@ -150,7 +150,7 @@ func (f *zero) CoordinatePlane(coords []Coord) {
 	f.count++
 }
 
-// Render the entire coordinate plane
+// Helper: Render the entire plane
 func renderPlane(coords []Coord) string {
 	nRows := getMaxY(coords) + 1
 	var b strings.Builder
@@ -162,31 +162,31 @@ func renderPlane(coords []Coord) string {
 	return b.String()
 }
 
-// Render a single row
+// Helper: Render a single row
 func renderRow(row int, coords []Coord) string {
 	var b strings.Builder
 	b.WriteString(`<div class="row">`)
-	b.WriteString(renderAxis("negative", row, coords, func(c Coord) bool { return c.X < 0 }))
-	b.WriteString(renderYInt(row, coords))
-	b.WriteString(renderAxis("positive", row, coords, func(c Coord) bool { return c.X > 0 }))
+	b.WriteString(renderAxis("left", row, coords, func(c Coord) bool { return c.X < 0 }))
+	b.WriteString(renderLabel(row))
+	b.WriteString(renderAxis("right", row, coords, func(c Coord) bool { return c.X > 0 }))
 	b.WriteString(`</div>`)
 	return b.String()
 }
 
-// Render an axis (negative or positive)
-func renderAxis(axisType string, row int, coords []Coord, filter func(Coord) bool) string {
+// Helper: Render an axis (left/right)
+func renderAxis(side string, row int, coords []Coord, filter func(Coord) bool) string {
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf(`<div class="axis %s">`, axisType))
+	b.WriteString(fmt.Sprintf(`<div class="axis %s"><div class="coordinate-grid">`, side))
 	for _, c := range coords {
 		if c.Y == row && filter(c) {
 			b.WriteString(renderCoordinate(c))
 		}
 	}
-	b.WriteString(`</div>`)
+	b.WriteString(`</div></div>`)
 	return b.String()
 }
 
-// Render a coordinate
+// Helper: Render a coordinate
 func renderCoordinate(c Coord) string {
 	axisType := "label"
 	if c.X < 0 {
@@ -203,17 +203,12 @@ func renderCoordinate(c Coord) string {
 	)
 }
 
-// Render the center column (yint)
-func renderYInt(row int, coords []Coord) string {
-	for _, c := range coords {
-		if c.Y == row && c.X == 0 {
-			return fmt.Sprintf(`<span class="yint">%s</span>`, template.HTMLEscapeString(c.Z.Value))
-		}
-	}
-	return fmt.Sprintf(`<span class="yint">%d</span>`, row)
+// Helper: Render the label column
+func renderLabel(row int) string {
+	return fmt.Sprintf(`<div class="label">%d</div>`, row)
 }
 
-// Get max Y value for rows
+// Helper: Get max Y value
 func getMaxY(coords []Coord) int {
 	maxY := 0
 	for _, c := range coords {

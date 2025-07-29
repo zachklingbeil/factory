@@ -72,8 +72,9 @@
 		text-align: center;
 	}
 </style>
-
-<div class="coordinate-plane" id="coordinate-plane"></div>
+<template>
+	<div class="coordinate-plane"></div>
+</template>
 
 <script>
 	class CoordinatePlane {
@@ -155,6 +156,10 @@
 	}
 
 	document.addEventListener('DOMContentLoaded', () => {
-		new CoordinatePlane(document.getElementById('coordinate-plane'));
+		const tpl = document.querySelector('template');
+		const node = tpl.content.cloneNode(true);
+		document.body.appendChild(node);
+		const container = document.querySelector('.coordinate-plane');
+		new CoordinatePlane(container);
 	});
 </script>

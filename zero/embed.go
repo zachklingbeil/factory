@@ -13,12 +13,6 @@ var componentHTML string
 //go:embed embed/coordinate.html
 var coordinatePlane string
 
-// //go:embed embed/coordinate.js
-// var coordinateJS string
-
-// //go:embed embed/coordinate.css
-// var coordinateCSS string
-
 //go:embed embed/one.js
 var oneJS string
 

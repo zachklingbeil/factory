@@ -20,6 +20,7 @@ type Zero interface {
 	GetFrame(index int) *One
 	FrameCount() string
 	CoordinatePlane(coords []Coord)
+	BuildFrameFromHTMLFile() error
 	Text
 	Element
 	Keybind

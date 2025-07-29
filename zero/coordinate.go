@@ -1,5 +1,47 @@
 package zero
 
+import (
+	"html/template"
+	"os"
+	"regexp"
+	"strings"
+)
+
+func (f *zero) BuildFrameFromHTMLFile() error {
+	content, err := os.ReadFile("./embed/coordinate.html")
+	if err != nil {
+		return err
+	}
+	htmlStr := string(content)
+
+	// Regex patterns to extract full <style>, <template>, <script> blocks (including tags)
+	styleRe := regexp.MustCompile(`(?s)<style.*?>.*?</style>`)
+	templateRe := regexp.MustCompile(`(?s)<template.*?>.*?</template>`)
+	scriptRe := regexp.MustCompile(`(?s)<script.*?>.*?</script>`)
+
+	var b strings.Builder
+
+	// Append <style> blocks
+	for _, match := range styleRe.FindAllString(htmlStr, -1) {
+		b.WriteString(match)
+	}
+
+	// Append <template> blocks
+	for _, match := range templateRe.FindAllString(htmlStr, -1) {
+		b.WriteString(match)
+	}
+
+	// Append <script> blocks
+	for _, match := range scriptRe.FindAllString(htmlStr, -1) {
+		b.WriteString(match)
+	}
+
+	final := One(template.HTML(b.String()))
+	f.frames = append(f.frames, &final)
+	f.count++
+	return nil
+}
+
 // type Coord struct {
 // 	X int
 // 	Y int

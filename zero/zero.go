@@ -167,7 +167,7 @@ func renderRow(row int, coords []Coord) string {
 	var b strings.Builder
 	b.WriteString(`<div class="row">`)
 	b.WriteString(renderAxis("left", row, coords, func(c Coord) bool { return c.X < 0 }))
-	b.WriteString(renderLabel(row))
+	b.WriteString(renderyInt(row))
 	b.WriteString(renderAxis("right", row, coords, func(c Coord) bool { return c.X > 0 }))
 	b.WriteString(`</div>`)
 	return b.String()
@@ -188,7 +188,7 @@ func renderAxis(side string, row int, coords []Coord, filter func(Coord) bool) s
 
 // Helper: Render a coordinate
 func renderCoordinate(c Coord) string {
-	axisType := "label"
+	axisType := "yInt"
 	if c.X < 0 {
 		axisType = "negative"
 	} else if c.X > 0 {
@@ -203,9 +203,9 @@ func renderCoordinate(c Coord) string {
 	)
 }
 
-// Helper: Render the label column
-func renderLabel(row int) string {
-	return fmt.Sprintf(`<div class="label">%d</div>`, row)
+// Helper: Render the yInt column
+func renderyInt(row int) string {
+	return fmt.Sprintf(`<div class="yInt">%d</div>`, row)
 }
 
 // Helper: Get max Y value

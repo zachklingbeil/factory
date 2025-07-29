@@ -143,53 +143,49 @@ type Coord struct {
 func (f *zero) CoordinatePlane(coords []Coord) {
 	var b strings.Builder
 	// b.WriteString(`<style>`)
+	// b.WriteString("")
 	// b.WriteString(f.CoordinateCSS())
 	// b.WriteString(`</style>`)
-	b.WriteString(renderPlane(coords))
+	b.WriteString(`<div class="coordinate-plane" id="coordinate-plane">`)
+	nRows := 0
+	for _, c := range coords {
+		if c.Y+1 > nRows {
+			nRows = c.Y + 1
+		}
+	}
+	for row := 0; row < nRows; row++ {
+		b.WriteString(`<div class="row">`)
+		// Negative axis
+		b.WriteString(`<div class="axis left"><div class="coordinate-grid">`)
+		for _, c := range coords {
+			if c.Y == row && c.X < 0 {
+				b.WriteString(createCoordinateHTML(c))
+			}
+		}
+		b.WriteString(`</div></div>`)
+		// Label
+		b.WriteString(`<div class="label">`)
+		label := row
+		b.WriteString(template.HTMLEscapeString(fmt.Sprintf("%d", label)))
+		b.WriteString(`</div>`)
+		// Positive axis
+		b.WriteString(`<div class="axis right"><div class="coordinate-grid">`)
+		for _, c := range coords {
+			if c.Y == row && c.X > 0 {
+				b.WriteString(createCoordinateHTML(c))
+			}
+		}
+		b.WriteString(`</div></div>`)
+		b.WriteString(`</div>`)
+	}
+	b.WriteString(`</div>`)
 	final := One(template.HTML(b.String()))
 	f.frames = append(f.frames, &final)
 	f.count++
 }
 
-// Helper: Render the entire plane
-func renderPlane(coords []Coord) string {
-	nRows := getMaxY(coords) + 1
-	var b strings.Builder
-	b.WriteString(`<div class="coordinate-plane" id="coordinate-plane">`)
-	for row := 0; row < nRows; row++ {
-		b.WriteString(renderRow(row, coords))
-	}
-	b.WriteString(`</div>`)
-	return b.String()
-}
-
-// Helper: Render a single row
-func renderRow(row int, coords []Coord) string {
-	var b strings.Builder
-	b.WriteString(`<div class="row">`)
-	b.WriteString(renderAxis("left", row, coords, func(c Coord) bool { return c.X < 0 }))
-	b.WriteString(renderyInt(row))
-	b.WriteString(renderAxis("right", row, coords, func(c Coord) bool { return c.X > 0 }))
-	b.WriteString(`</div>`)
-	return b.String()
-}
-
-// Helper: Render an axis (left/right)
-func renderAxis(side string, row int, coords []Coord, filter func(Coord) bool) string {
-	var b strings.Builder
-	b.WriteString(fmt.Sprintf(`<div class="axis %s"><div class="coordinate-grid">`, side))
-	for _, c := range coords {
-		if c.Y == row && filter(c) {
-			b.WriteString(renderCoordinate(c))
-		}
-	}
-	b.WriteString(`</div></div>`)
-	return b.String()
-}
-
-// Helper: Render a coordinate
-func renderCoordinate(c Coord) string {
-	axisType := "yInt"
+func createCoordinateHTML(c Coord) string {
+	axisType := "label"
 	if c.X < 0 {
 		axisType = "negative"
 	} else if c.X > 0 {
@@ -202,20 +198,4 @@ func renderCoordinate(c Coord) string {
 		template.HTMLEscapeString(c.Z.Time),
 		template.HTMLEscapeString(c.Z.Value),
 	)
-}
-
-// Helper: Render the yInt column
-func renderyInt(row int) string {
-	return fmt.Sprintf(`<div class="yInt">%d</div>`, row)
-}
-
-// Helper: Get max Y value
-func getMaxY(coords []Coord) int {
-	maxY := 0
-	for _, c := range coords {
-		if c.Y > maxY {
-			maxY = c.Y
-		}
-	}
-	return maxY
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
 
@@ -85,7 +86,8 @@ func (f *Fx) ConnectPostgres(dbName string) (*sql.DB, error) {
 	return db, nil
 }
 
-// NewOAuthClient returns an authenticated HTTP client (machine-to-machine, no user interaction)
+// NewOAuthClient returns an authenticated HTTP client using OAuth2 client credentials flow
+// with automatic token refreshing and all requested scopes.
 func (f *Fx) NewOAuthClient(clientID, clientSecret, tokenURL string, scopes []string) (*http.Client, error) {
 	ctx, cancel := context.WithTimeout(f.Ctx, 2*time.Minute)
 	defer cancel()
@@ -97,18 +99,17 @@ func (f *Fx) NewOAuthClient(clientID, clientSecret, tokenURL string, scopes []st
 		Scopes:       scopes,
 	}
 
-	// Get token and create HTTP client
-	client := config.Client(ctx)
-	if client == nil {
-		return nil, fmt.Errorf("failed to create OAuth client")
-	}
+	// Create a TokenSource that automatically refreshes tokens
+	tokenSource := config.TokenSource(ctx)
 
-	// Test the client by making a token request to validate credentials
-	token, err := config.Token(ctx)
+	// Get initial token to verify credentials
+	token, err := tokenSource.Token()
 	if err != nil {
 		return nil, fmt.Errorf("OAuth client credentials flow failed: %w", err)
 	}
 	fmt.Printf("✓ OAuth client authenticated successfully (token expires: %v)\n", token.Expiry)
-	f.oath = client
+
+	// Create an HTTP client that uses the TokenSource for automatic refreshing
+	client := oauth2.NewClient(ctx, tokenSource)
 	return client, nil
 }

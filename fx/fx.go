@@ -20,7 +20,6 @@ type Fx struct {
 	eth      *ethclient.Client
 	postgres *sql.DB
 	redis    *redis.Client
-	oath     *http.Client
 	*mux.Router
 	*io.IO
 }

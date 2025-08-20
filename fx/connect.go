@@ -3,7 +3,9 @@ package fx
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -17,45 +19,49 @@ import (
 )
 
 // Establish geth.ipc connection
-func (f *Fx) Node() (*rpc.Client, *ethclient.Client) {
-	rpc, err := rpc.DialIPC(f.Ctx, "/ethereum/geth.ipc") // Updated path
+func (f *Fx) Node() error {
+	rpc, err := rpc.DialIPC(f.Ctx, "/.ethereum/geth.ipc") // Updated path
 	if err != nil {
 		log.Printf("Failed to connect to the Ethereum client: %v", err)
-		return nil, nil
+		return nil
 	}
 	// log.Println("Successfully connected to the Ethereum client.")
 	eth := ethclient.NewClient(rpc)
-	f.rpc = rpc
-	f.eth = eth
-	return rpc, eth
+	f.Rpc = rpc
+	f.Eth = eth
+	return nil
 }
 
-// Establish geth.ws connection using API key from environment variable
-func (f *Fx) NodeWS(wsURL, apikey string) (*rpc.Client, *ethclient.Client, error) {
-	fullURL := fmt.Sprintf("%s/%s", wsURL, apikey)
-	rpcClient, err := rpc.DialContext(f.Ctx, fullURL)
+// GethHandler handles JSON-RPC requests via IPC
+func (f *Fx) GethHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("Failed to connect to Ethereum WebSocket: %v", err)
-		return nil, nil, err
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
 	}
-	eth := ethclient.NewClient(rpcClient)
-	f.rpc = rpcClient
-	f.eth = eth
-	return rpcClient, eth, nil
-}
 
-// Establish geth.http connection using API key from environment variable
-func (f *Fx) NodeHTTP(httpURL, apikey string) (*rpc.Client, *ethclient.Client, error) {
-	fullURL := fmt.Sprintf("%s/%s", httpURL, apikey)
-	rpcClient, err := rpc.DialHTTP(fullURL)
-	if err != nil {
-		log.Printf("Failed to connect to Ethereum HTTP: %v", err)
-		return nil, nil, err
+	// Parse the JSON-RPC request
+	var req struct {
+		Method string `json:"method"`
+		Params []any  `json:"params"`
 	}
-	eth := ethclient.NewClient(rpcClient)
-	f.rpc = rpcClient
-	f.eth = eth
-	return rpcClient, eth, nil
+	if err := json.Unmarshal(body, &req); err != nil {
+		http.Error(w, "Invalid JSON-RPC request", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(f.Ctx, 30*time.Second)
+	defer cancel()
+
+	var result json.RawMessage
+	if err := f.Rpc.CallContext(ctx, &result, req.Method, req.Params...); err != nil {
+		http.Error(w, "RPC call failed", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Write(result)
 }
 
 func (f *Fx) ConnectRedis(dbNumber int, password string) (*redis.Client, error) {

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>hello_universe</title>
+		<style>
+			*,
+			*::before,
+			*::after {
+				box-sizing: border-box;
+				margin: 0;
+				scrollbar-width: none;
+				-ms-overflow-style: none;
+				user-select: none;
+			}
+			*::-webkit-scrollbar {
+				display: none;
+			}
+			html,
+			body {
+				color: #f1f1f1;
+				background-color: black;
+				height: 100vh;
+				font-family: 'Roboto', sans-serif;
+				scroll-behavior: smooth;
+				overflow: hidden;
+			}
+			body {
+				display: flex;
+				border: medium solid blue;
+				border-radius: 0.3125em;
+			}
+
+			#app {
+				flex: 1;
+				display: flex;
+			}
+
+			a,
+			a:hover,
+			a:visited,
+			a:active,
+			a:focus {
+				text-align: center;
+				color: inherit;
+				text-decoration: underline;
+			}
+		</style>
+		<script>
+			let currentFrame = 0;
+			let nextFrame = null;
+			let prevFrame = null;
+
+			function loadFrame(frameIndex) {
+				const url = `https://${window.location.hostname}/frame/${frameIndex}`;
+
+				fetch(url)
+					.then((response) => {
+						nextFrame = response.headers.get('X-Frame-Next');
+						prevFrame = response.headers.get('X-Frame-Prev');
+						return response.text();
+					})
+					.then((html) => {
+						document.getElementById('app').innerHTML = html;
+						currentFrame = frameIndex;
+					})
+					.catch((error) => console.error('Error:', error));
+			}
+
+			function navigateToNext() {
+				if (nextFrame !== null) {
+					loadFrame(parseInt(nextFrame));
+				}
+			}
+
+			function navigateToPrev() {
+				if (prevFrame !== null) {
+					loadFrame(parseInt(prevFrame));
+				}
+			}
+			document.addEventListener('keydown', (event) => {
+				switch (event.key.toLowerCase()) {
+					case 'e':
+						navigateToNext();
+						break;
+					case 'q':
+						navigateToPrev();
+						break;
+				}
+			});
+			document.addEventListener('DOMContentLoaded', () => {
+				loadFrame(0);
+			});
+		</script>
+	</head>
+	<body>
+		<div id="app"></div>
+	</body>
+</html>

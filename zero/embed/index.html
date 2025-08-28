@@ -17,22 +17,21 @@
 			*::-webkit-scrollbar {
 				display: none;
 			}
-			html,
+			html {
+				scroll-behavior: smooth;
+			}
 			body {
 				color: #f1f1f1;
 				background-color: black;
 				height: 100vh;
 				font-family: 'Roboto', sans-serif;
-				scroll-behavior: smooth;
 				overflow: hidden;
-			}
-			body {
 				display: flex;
 				border: medium solid blue;
 				border-radius: 0.3125em;
 			}
 
-			#app {
+			#universe {
 				flex: 1;
 				display: flex;
 			}
@@ -62,7 +61,7 @@
 						return response.text();
 					})
 					.then((html) => {
-						document.getElementById('app').innerHTML = html;
+						document.getElementById('universe').innerHTML = html;
 						currentFrame = frameIndex;
 					})
 					.catch((error) => console.error('Error:', error));
@@ -95,6 +94,6 @@
 		</script>
 	</head>
 	<body>
-		<div id="app"></div>
+		<div id="universe"></div>
 	</body>
 </html>

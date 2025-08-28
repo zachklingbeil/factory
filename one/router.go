@@ -16,14 +16,6 @@ import (
 func (o *One) Circuit() {
 	o.Path("/").HandlerFunc(o.servePathless)
 	o.Path("/frame/{index}").HandlerFunc(o.serveFrame)
-	o.Path("/api/test").HandlerFunc(o.serveAPI)
-}
-
-func (o *One) serveAPI(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	if err := json.NewEncoder(w).Encode(o.TestJSON()); err != nil {
-		http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
-	}
 }
 
 func (o *One) RegisterAPI(prefix string) {

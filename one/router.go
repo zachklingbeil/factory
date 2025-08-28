@@ -68,12 +68,7 @@ func (o *One) xyz(prefix string) http.HandlerFunc {
 func (o *One) servePathless(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("X-FRAMES", o.FrameCount())
-	pathless := o.GetPathless()
-	if pathless == nil {
-		http.Error(w, "No pathless content", http.StatusNotFound)
-		return
-	}
-	fmt.Fprint(w, *pathless)
+	fmt.Fprint(w, *o.Pathless())
 }
 
 func (o *One) serveFrame(w http.ResponseWriter, r *http.Request) {

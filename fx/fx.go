@@ -3,16 +3,16 @@ package fx
 import (
 	"context"
 	"database/sql"
-	"net/http"
+	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
 	"github.com/zachklingbeil/factory/fx/io"
+	"goauthentik.io/api/v3"
 )
 
 type Fx struct {
@@ -21,7 +21,7 @@ type Fx struct {
 	Eth      *ethclient.Client
 	postgres *sql.DB
 	redis    *redis.Client
-	*mux.Router
+	Auth     *api.APIClient // Authentik API client for management
 	*io.IO
 	apiKey string
 }
@@ -34,36 +34,33 @@ func InitFx() *Fx {
 		apiKey: os.Getenv("API_KEY"),
 	}
 	fx.Node()
-	fx.Router = fx.NewRouter()
-	fx.HandleFunc("/geth", fx.withAPIKey(fx.GethHandler)).Methods(http.MethodPost)
 	return fx
 }
 
-func (f *Fx) NewRouter() *mux.Router {
-	router := mux.NewRouter().StrictSlash(true)
-	router.Use(f.corsMiddleware())
-	go func() {
-		http.ListenAndServe(":1001", router)
-	}()
-	return router
+// NewAuth creates a new Authentik API client with the given baseURL and apikey.
+func (f *Fx) Authentik(baseURL, apiKey string) {
+	cfg := api.NewConfiguration()
+	cfg.Host = baseURL
+	cfg.Scheme = "https"
+	cfg.DefaultHeader = map[string]string{
+		"Authorization": "Bearer " + apiKey,
+	}
+	client := api.NewAPIClient(cfg)
+	f.Auth = client
 }
 
-// withAPIKey wraps a handler with API key validation
-func (f *Fx) withAPIKey(handler http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		apiKey := r.Header.Get("X-API-KEY")
-		if apiKey != f.apiKey {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-		handler(w, r)
-	})
-}
+// TestConnection fetches and prints the current user info to test the connection.
+func (f *Fx) WhoAmIAuthentik() error {
+	user, _, err := f.Auth.CoreApi.CoreUsersMeRetrieve(context.TODO()).Execute()
+	if err != nil {
+		return err
+	}
 
-func (f *Fx) corsMiddleware() mux.MiddlewareFunc {
-	return handlers.CORS(
-		handlers.AllowedHeaders([]string{"X-Requested-With", "X-API-KEY", "X-FRAMES", "Content-Type", "Peer", "Cache-Control", "Connection", "Authorization"}),
-		handlers.AllowedOrigins([]string{"*"}),
-		handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"}),
-	)
+	out, err := json.MarshalIndent(user, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(out))
+	return nil
 }

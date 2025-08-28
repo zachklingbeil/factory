@@ -14,13 +14,42 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
+	"goauthentik.io/api/v3"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
 
+// NewAuth creates a new Authentik API client with the given baseURL and apikey.
+func (f *Fx) Authentik(baseURL, authentikApiKey string) {
+	cfg := api.NewConfiguration()
+	cfg.Host = baseURL
+	cfg.Scheme = "https"
+	cfg.DefaultHeader = map[string]string{
+		"Authorization": "Bearer " + authentikApiKey,
+	}
+	client := api.NewAPIClient(cfg)
+	f.Auth = client
+}
+
+// TestConnection fetches and prints the current user info to test the connection.
+func (f *Fx) WhoAmIAuthentik() error {
+	user, _, err := f.Auth.CoreApi.CoreUsersMeRetrieve(context.TODO()).Execute()
+	if err != nil {
+		return err
+	}
+
+	out, err := json.MarshalIndent(user, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(out))
+	return nil
+}
+
 // Establish geth.ipc connection
 func (f *Fx) Node() error {
-	rpc, err := rpc.DialIPC(f.Ctx, "/.ethereum/geth.ipc") // Updated path
+	rpc, err := rpc.DialIPC(f.Context, "/.ethereum/geth.ipc") // Updated path
 	if err != nil {
 		log.Printf("Failed to connect to the Ethereum client: %v", err)
 		return nil
@@ -50,7 +79,7 @@ func (f *Fx) GethHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(f.Ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(f.Context, 30*time.Second)
 	defer cancel()
 
 	var result json.RawMessage
@@ -71,7 +100,7 @@ func (f *Fx) ConnectRedis(dbNumber int, password string) (*redis.Client, error) 
 		DB:       dbNumber,
 	})
 
-	if _, err := client.Ping(f.Ctx).Result(); err != nil {
+	if _, err := client.Ping(f.Context).Result(); err != nil {
 		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
 	}
 	f.redis = client
@@ -95,7 +124,7 @@ func (f *Fx) ConnectPostgres(dbName string) (*sql.DB, error) {
 // NewOAuthClient returns an authenticated HTTP client using OAuth2 client credentials flow
 // with automatic token refreshing and all requested scopes.
 func (f *Fx) NewOAuthClient(clientID, clientSecret, tokenURL string, scopes []string) (*http.Client, error) {
-	ctx, cancel := context.WithTimeout(f.Ctx, 2*time.Minute)
+	ctx, cancel := context.WithTimeout(f.Context, 2*time.Minute)
 	defer cancel()
 
 	config := &clientcredentials.Config{

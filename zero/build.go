@@ -1,41 +1,31 @@
 package zero
 
 import (
+	_ "embed"
 	"fmt"
 	"html"
 	"html/template"
-	"strconv"
 	"strings"
 )
 
 type Build interface {
 	Lego(class string, elements ...One) *One
-	Build(class string, elements ...One)
 	JS(js string) One
 	CSS(css string) One
-	GetFrame(index int) *One
-	FrameCount() string
 	AddKeybind(containerId string, keyHandlers map[string]string) *One
 	Text
 	Element
-	Universe
 }
 
 type build struct {
 	*text
 	*element
-	*coordinates
-	frames []*One
-	count  uint
 }
 
 func NewBuild() Build {
 	return &build{
-		text:        NewText().(*text),
-		element:     NewElement().(*element),
-		coordinates: NewUniverse().(*coordinates),
-		frames:      make([]*One, 0),
-		count:       0,
+		text:    NewText().(*text),
+		element: NewElement().(*element),
 	}
 }
 
@@ -54,21 +44,6 @@ func (f *build) Lego(class string, elements ...One) *One {
 	htmlResult := fmt.Sprintf(`<div class="%s">%s</div>`, html.EscapeString(class), string(consolidatedContent))
 	result := One(template.HTML(htmlResult))
 	return &result
-}
-
-func (f *build) Build(class string, elements ...One) {
-	zero := f.Lego(class, elements...)
-	f.frames = append(f.frames, zero)
-	f.count++
-}
-
-func (f *build) FrameCount() string {
-	return strconv.Itoa(int(f.count) - 1)
-}
-
-// Retrieve a zero by index
-func (f *build) GetFrame(index int) *One {
-	return f.frames[index]
 }
 
 func (f *build) JS(js string) One {

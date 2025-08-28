@@ -17,7 +17,6 @@ type Element interface {
 	Iframe(src string) One
 	Embed(src string) One
 	Source(src string) One
-	Nav(attrs map[string]string) One
 	Canvas(id string) One
 	Table(cols uint8, rows uint64, data [][]string) One
 }
@@ -73,10 +72,6 @@ func (e *element) Embed(src string) One {
 
 func (e *element) Source(src string) One {
 	return One(template.HTML(fmt.Sprintf(`<source src="%s"/>`, html.EscapeString(src))))
-}
-
-func (e *element) Nav(attrs map[string]string) One {
-	return ClosedTag("nav", attrs)
 }
 
 func (e *element) Canvas(id string) One {

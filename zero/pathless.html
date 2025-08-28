@@ -22,18 +22,13 @@
 			}
 			body {
 				color: #f1f1f1;
-				background-color: black;
+				background-color: #000000;
 				height: 100vh;
 				font-family: 'Roboto', sans-serif;
 				overflow: hidden;
 				display: flex;
 				border: medium solid blue;
 				border-radius: 0.3125em;
-			}
-
-			#universe {
-				flex: 1;
-				display: flex;
 			}
 
 			a,
@@ -47,53 +42,36 @@
 			}
 		</style>
 		<script>
-			let currentFrame = 0;
-			let nextFrame = null;
-			let prevFrame = null;
+			const nav = { prev: 0, next: 0 };
 
 			function loadFrame(frameIndex) {
-				const url = `https://${window.location.hostname}/frame/${frameIndex}`;
-
-				fetch(url)
+				fetch('/', { headers: { Y: frameIndex } })
 					.then((response) => {
-						nextFrame = response.headers.get('X-Frame-Next');
-						prevFrame = response.headers.get('X-Frame-Prev');
+						nav.prev = parseInt(response.headers.get('X'));
+						nav.next = parseInt(response.headers.get('Z'));
 						return response.text();
 					})
 					.then((html) => {
-						document.getElementById('universe').innerHTML = html;
-						currentFrame = frameIndex;
+						document.body.innerHTML = html;
 					})
-					.catch((error) => console.error('Error:', error));
+					.catch(console.error);
 			}
 
-			function navigateToNext() {
-				if (nextFrame !== null) {
-					loadFrame(parseInt(nextFrame));
-				}
-			}
-
-			function navigateToPrev() {
-				if (prevFrame !== null) {
-					loadFrame(parseInt(prevFrame));
-				}
-			}
 			document.addEventListener('keydown', (event) => {
 				switch (event.key.toLowerCase()) {
 					case 'e':
-						navigateToNext();
+						loadFrame(nav.next);
 						break;
 					case 'q':
-						navigateToPrev();
+						loadFrame(nav.prev);
 						break;
 				}
 			});
+
 			document.addEventListener('DOMContentLoaded', () => {
 				loadFrame(0);
 			});
 		</script>
 	</head>
-	<body>
-		<div id="universe"></div>
-	</body>
+	<body></body>
 </html>

@@ -1,9 +1,96 @@
-package io
+package fx
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
+	"sync"
 )
+
+// GetOption represents a function that modifies a GET request
+type GetOption func(*http.Request)
+
+// Get executes Http GET requests with the given URL and options
+func (f *Fx) In(endpoint string, options ...GetOption) ([]byte, error) {
+	req, err := f.createRequest(endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, option := range options {
+		option(req)
+	}
+	return f.executeRequest(req)
+}
+
+// Out writes single response for http requests, using a function to source data and a locker to synchronize access or an HTTP 500 error when the input function fails or JSON encoding fails.
+func (f *Fx) Out(w http.ResponseWriter, input func() (any, error), locker sync.Locker) {
+	locker.Lock()
+	data, err := input()
+	locker.Unlock()
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// Print value as indented JSON to the standard output or logs error when value cannot be marshaled.
+func (f *Fx) Print(value any) {
+	json, err := json.MarshalIndent(value, "", "  ")
+	if err != nil {
+		fmt.Printf("Error marshalling Frame to JSON: %v\n", err)
+		return
+	}
+	fmt.Println(string(json))
+}
+
+// createRequest creates and configures the base Http GET request
+func (f *Fx) createRequest(endpoint string) (*http.Request, error) {
+	parsedURL, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse URL %s: %w", endpoint, err)
+	}
+
+	req, err := http.NewRequestWithContext(f.Context, "GET", parsedURL.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GET request for URL %s: %w", parsedURL.String(), err)
+	}
+	req.Header.Set("Accept", "application/json")
+	return req, nil
+}
+
+// executeRequest executes the Http request and returns the response body
+func (f *Fx) executeRequest(req *http.Request) ([]byte, error) {
+	resp, err := f.Http.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute GET request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Check for successful status codes (2xx range)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
+	}
+
+	// Handle empty response body
+	if resp.ContentLength == 0 {
+		return []byte{}, nil
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+	return body, nil
+}
 
 // Header option builders
 func WithHeader(key, value string) GetOption {
@@ -68,7 +155,7 @@ func WithQueryMap(params map[string]string) GetOption {
 }
 
 // Simplify processes any input, flattens it, and removes empty fields.
-func (i *IO) Simplify(input any) any {
+func (f *Fx) Simplify(input any) any {
 	result := make(map[string]any)
 
 	// Use a stack to avoid recursion

@@ -45,3 +45,4 @@ jobs:
                 push: true
                 tags: |
                   registry.timefactory.io/factory:latest
+                  registry.timefactory.io/factory:${{ steps.tag_version.outputs.new_tag }}

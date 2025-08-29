@@ -43,8 +43,6 @@ func NewZero() *Zero {
 }
 
 func (z *Zero) AddFrame(frame *One) {
-	z.Lock()
-	defer z.Unlock()
 	z.Frames = append(z.Frames, frame)
 	z.Add("count", len(z.Frames))
 }

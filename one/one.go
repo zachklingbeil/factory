@@ -9,19 +9,19 @@ import (
 	"github.com/zachklingbeil/factory/fx"
 )
 
-type One struct {
+type Factory struct {
 	*fx.Fx
 }
 
-func NewOne() *One {
-	one := &One{
+func NewFactory() *Factory {
+	one := &Factory{
 		Fx: fx.Init(),
 	}
 	one.Path("/").HandlerFunc(one.Pathless)
 	return one
 }
 
-func (o *One) Pathless(w http.ResponseWriter, r *http.Request) {
+func (o *Factory) Pathless(w http.ResponseWriter, r *http.Request) {
 	valChan := o.Observe("count")
 	val := <-valChan
 	count := val.(*atomic.Value).Load().(int)

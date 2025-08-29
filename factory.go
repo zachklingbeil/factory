@@ -6,18 +6,8 @@ import (
 	"github.com/zachklingbeil/factory/one"
 )
 
-type Factory struct {
-	*one.One
-}
-
-func NewFactory() *Factory {
-	return &Factory{
-		One: one.NewOne(),
-	}
-}
-
 func main() {
-	factory := one.NewOne()
+	factory := one.NewFactory()
 	go func() {
 		http.ListenAndServe(":1001", factory.Router)
 	}()

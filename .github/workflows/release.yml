@@ -13,6 +13,16 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
+            - name: Cache Go modules
+              uses: actions/cache@v4
+              with:
+                path: |
+                  ~/.cache/go-build
+                  ~/go/pkg/mod
+                key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+                restore-keys: |
+                  ${{ runner.os }}-go-
+
             - name: Bump version and push tag
               id: tag_version
               uses: mathieudutour/github-tag-action@v6.1
@@ -46,3 +56,5 @@ jobs:
                 tags: |
                   registry.timefactory.io/factory:latest
                   registry.timefactory.io/factory:${{ steps.tag_version.outputs.new_tag }}
+                cache-from: type=gha
+                cache-to: type=gha,mode=max

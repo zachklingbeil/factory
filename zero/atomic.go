@@ -49,8 +49,6 @@ func (z *Zero) Subtract(key string) {
 
 // save the Map map to the JSON file.
 func (z *Zero) save() {
-	z.RLock()
-	defer z.RUnlock()
 	plain := make(map[string]any)
 	for k, v := range z.Map {
 		plain[k] = v.Load()

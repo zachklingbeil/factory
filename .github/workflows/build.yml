@@ -34,7 +34,7 @@ jobs:
                   registry.timefactory.io/factory:latest
                   registry.timefactory.io/factory:${{ github.sha }}
                 cache-from: type=gha
-                cache-to: type=gha,mode=max
+                # cache-to: type=gha,mode=max
             
             - name: Log out from registry
               run: docker logout registry.timefactory.io

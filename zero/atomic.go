@@ -57,29 +57,29 @@ func (z *Zero) save() {
 	_ = os.WriteFile("factory/atomic.json", data, 0644)
 }
 
-// Load the Map map from the JSON file, creating the file if needed.
-func (z *Zero) Load() {
-	z.Lock()
-	defer z.Unlock()
-	const filePath = "factory/atomic.json"
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		_ = os.WriteFile(filePath, []byte("{}"), 0644)
-	}
+// // Load the Map map from the JSON file, creating the file if needed.
+// func (z *Zero) Load() {
+// 	z.Lock()
+// 	defer z.Unlock()
+// 	const filePath = "factory/atomic.json"
+// 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+// 		_ = os.WriteFile(filePath, []byte("{}"), 0644)
+// 	}
 
-	data, err := os.ReadFile(filePath)
-	if err != nil || len(data) == 0 {
-		return
-	}
-	var plain map[string]any
-	if err := json.Unmarshal(data, &plain); err != nil {
-		return
-	}
-	for k, v := range plain {
-		av := &atomic.Value{}
-		av.Store(v)
-		z.Map[k] = av
-	}
-}
+// 	data, err := os.ReadFile(filePath)
+// 	if err != nil || len(data) == 0 {
+// 		return
+// 	}
+// 	var plain map[string]any
+// 	if err := json.Unmarshal(data, &plain); err != nil {
+// 		return
+// 	}
+// 	for k, v := range plain {
+// 		av := &atomic.Value{}
+// 		av.Store(v)
+// 		z.Map[k] = av
+// 	}
+// }
 
 // WaitForCondition waits until the provided condition function returns true.
 // It must be called with the lock held.

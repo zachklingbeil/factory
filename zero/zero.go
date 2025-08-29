@@ -38,7 +38,6 @@ func NewZero() *Zero {
 		Element:  NewElement(),
 	}
 	zero.AddFrame(zero.Pathless())
-	zero.Load()
 	return zero
 }
 

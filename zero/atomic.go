@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 )
 
-func (z *Zero) Add(key string, val any) {
+func (z *Zero) Add(key string, val int) {
 	z.Lock()
 	defer z.Unlock()
 	if _, exists := z.Map[key]; !exists {
@@ -23,11 +23,13 @@ func (z *Zero) Add(key string, val any) {
 	z.save()
 }
 
-func (z *Zero) Observe(key string) <-chan any {
-	ch := make(chan any, 1)
+func (z *Zero) Observe(key string) <-chan int {
+	ch := make(chan int, 1)
 	z.RLock()
 	if v, exists := z.Map[key]; exists {
-		ch <- v.Load()
+		if i, ok := v.Load().(int); ok {
+			ch <- i
+		}
 	}
 	z.RUnlock()
 	return ch
@@ -39,7 +41,7 @@ func (z *Zero) Subtract(key string) {
 	delete(z.Map, key)
 	for _, ch := range z.watchers[key] {
 		select {
-		case ch <- nil:
+		case ch <- 0:
 		default:
 		}
 	}
@@ -49,9 +51,11 @@ func (z *Zero) Subtract(key string) {
 
 // save the Map map to the JSON file.
 func (z *Zero) save() {
-	plain := make(map[string]any)
+	plain := make(map[string]int)
 	for k, v := range z.Map {
-		plain[k] = v.Load()
+		if i, ok := v.Load().(int); ok {
+			plain[k] = i
+		}
 	}
 	data, _ := json.MarshalIndent(plain, "", "  ")
 	_ = os.WriteFile("factory/atomic.json", data, 0644)

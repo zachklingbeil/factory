@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"sync/atomic"
 
 	"github.com/zachklingbeil/factory/fx"
 )
@@ -23,8 +22,7 @@ func NewFactory() *Factory {
 
 func (o *Factory) Pathless(w http.ResponseWriter, r *http.Request) {
 	valChan := o.Observe("count")
-	val := <-valChan
-	count := val.(*atomic.Value).Load().(int)
+	count := <-valChan
 
 	current, err := strconv.Atoi(r.Header.Get("Y"))
 	if err != nil || current < 0 || current >= count {

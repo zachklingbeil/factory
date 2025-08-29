@@ -8,6 +8,7 @@ import (
 
 func (z *Zero) Add(key string, val any) {
 	z.Lock()
+	defer z.Unlock()
 	if _, exists := z.Map[key]; !exists {
 		z.Map[key] = &atomic.Value{}
 	}
@@ -20,23 +21,21 @@ func (z *Zero) Add(key string, val any) {
 	}
 	z.Cond.Broadcast()
 	z.save()
-	z.Unlock()
 }
 
-// Observe returns a channel that receives updates for the key.
 func (z *Zero) Observe(key string) <-chan any {
 	ch := make(chan any, 1)
-	z.Lock()
-	z.watchers[key] = append(z.watchers[key], ch)
+	z.RLock()
 	if v, exists := z.Map[key]; exists {
 		ch <- v.Load()
 	}
-	z.Unlock()
+	z.RUnlock()
 	return ch
 }
 
 func (z *Zero) Subtract(key string) {
 	z.Lock()
+	defer z.Unlock()
 	delete(z.Map, key)
 	for _, ch := range z.watchers[key] {
 		select {
@@ -46,11 +45,12 @@ func (z *Zero) Subtract(key string) {
 	}
 	z.Cond.Broadcast()
 	z.save()
-	z.Unlock()
 }
 
 // save the Map map to the JSON file.
 func (z *Zero) save() {
+	z.RLock()
+	defer z.RUnlock()
 	plain := make(map[string]any)
 	for k, v := range z.Map {
 		plain[k] = v.Load()
@@ -76,7 +76,6 @@ func (z *Zero) Load() {
 	if err := json.Unmarshal(data, &plain); err != nil {
 		return
 	}
-	z.Map = make(map[string]*atomic.Value)
 	for k, v := range plain {
 		av := &atomic.Value{}
 		av.Store(v)

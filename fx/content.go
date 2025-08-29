@@ -39,7 +39,7 @@ func (f *Fx) getType(filename string, data []byte) string {
 }
 
 func (f *Fx) addRoute(path string, data []byte, contentType string) {
-	f.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+	f.Zero.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", contentType)
 		w.Write(data)
 	})

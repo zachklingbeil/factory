@@ -1,34 +1,88 @@
 package zero
 
 import (
+	"bytes"
 	_ "embed"
 	"fmt"
 	"html"
 	"html/template"
+	"os"
 	"strings"
+
+	math "github.com/litao91/goldmark-mathjax"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
+	h "github.com/yuin/goldmark/renderer/html"
 )
 
+//go:embed pathless.html
+var pathless string
+
 type Build interface {
+	Pathless() *One
 	Lego(class string, elements ...One) *One
 	JS(js string) One
 	CSS(css string) One
 	AddKeybind(containerId string, keyHandlers map[string]string) *One
-	Text
-	Element
-}
-
-type build struct {
-	*text
-	*element
+	AddMarkdown(file string) *One
 }
 
 func NewBuild() Build {
-	return &build{
-		text:    NewText().(*text),
+	b := &build{
 		element: NewElement().(*element),
+		Md:      initGoldmark(),
 	}
+	one := One(template.HTML(pathless))
+	b.pathless = &one
+	return b
 }
 
+func (f *build) AddMarkdown(file string) *One {
+	content, err := os.ReadFile(file)
+	if err != nil {
+		empty := One("")
+		return &empty
+	}
+
+	var buf bytes.Buffer
+	if err := (*f.Md).Convert(content, &buf); err != nil {
+		empty := One("")
+		return &empty
+	}
+
+	result := One(template.HTML(buf.String()))
+	return &result
+}
+
+func initGoldmark() *goldmark.Markdown {
+	md := goldmark.New(
+		goldmark.WithExtensions(extension.GFM, math.MathJax),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+			parser.WithAttribute(),
+			parser.WithBlockParsers(),
+			parser.WithInlineParsers(),
+		),
+		goldmark.WithRendererOptions(
+			h.WithHardWraps(),
+			h.WithXHTML(),
+		),
+	)
+	return &md
+}
+
+// Add this field to the build struct:
+type build struct {
+	*element
+	pathless *One
+	Md       *goldmark.Markdown
+}
+
+func (f *build) Pathless() *One {
+	return f.pathless
+
+}
 func (f *build) Lego(class string, elements ...One) *One {
 	var b strings.Builder
 	for _, el := range elements {

@@ -4,13 +4,11 @@ go 1.25.0
 
 require (
 	github.com/ethereum/go-ethereum v1.16.2
-	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
 	github.com/lib/pq v1.10.9
 	github.com/litao91/goldmark-mathjax v0.0.0-20210217064022-a43cf739a50f
 	github.com/redis/go-redis/v9 v9.12.1
 	github.com/yuin/goldmark v1.7.13
-	goauthentik.io/api/v3 v3.2025100.2
 	golang.org/x/oauth2 v0.30.0
 )
 
@@ -27,7 +25,6 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/ethereum/c-kzg-4844/v2 v2.1.1 // indirect
 	github.com/ethereum/go-verkle v0.2.2 // indirect
-	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/holiman/uint256 v1.3.2 // indirect

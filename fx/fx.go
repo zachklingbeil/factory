@@ -10,7 +10,6 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/zachklingbeil/factory/zero"
-	"goauthentik.io/api/v3"
 )
 
 type Fx struct {
@@ -18,12 +17,11 @@ type Fx struct {
 	Eth      *ethclient.Client
 	postgres *sql.DB
 	redis    *redis.Client
-	Auth     *api.APIClient // Authentik API client for management
 	Http     *http.Client
 	*zero.Zero
 }
 
-func InitFx() *Fx {
+func Init() *Fx {
 	return &Fx{
 		Zero: zero.NewZero(),
 	}

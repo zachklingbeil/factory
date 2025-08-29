@@ -2,66 +2,49 @@ package zero
 
 import (
 	"context"
-	_ "embed"
-	"fmt"
+
 	"html/template"
-	"net/http"
-	"strconv"
+	"sync"
+	"sync/atomic"
 
 	"github.com/gorilla/mux"
 )
-
-//go:embed pathless.html
-var pathless string
-
-var count int // package-level variable for frame count
 
 type One template.HTML
 
 type Zero struct {
 	Build
-	*mux.Router
+	Element Element
 	context.Context
-	Frames []*One
+	*mux.Router
+	*sync.RWMutex
+	*sync.Cond
+	Frames   []*One
+	Map      map[string]*atomic.Value
+	watchers map[string][]chan any
 }
 
 func NewZero() *Zero {
-	return &Zero{
-		Build:   NewBuild(),
-		Frames:  make([]*One, 0),
-		Router:  mux.NewRouter(),
-		Context: context.Background(),
+	rw := &sync.RWMutex{}
+	zero := &Zero{
+		RWMutex:  rw,
+		Cond:     sync.NewCond(rw),
+		Context:  context.Background(),
+		Build:    NewBuild(),
+		Frames:   make([]*One, 0),
+		Router:   mux.NewRouter().StrictSlash(false),
+		watchers: make(map[string][]chan any),
+		Map:      make(map[string]*atomic.Value),
+		Element:  NewElement(),
 	}
-}
-
-func (z *Zero) ZeroZero() {
-	root := One(template.HTML(pathless))
-	z.AddFrame(&root)
-	z.Path("/").HandlerFunc(z.Pathless)
-	go func() {
-		http.ListenAndServe(":1001", z.Router)
-	}()
+	zero.AddFrame(zero.Pathless())
+	zero.Load()
+	return zero
 }
 
 func (z *Zero) AddFrame(frame *One) {
+	z.Lock()
+	defer z.Unlock()
 	z.Frames = append(z.Frames, frame)
-	count = len(z.Frames)
-}
-
-func (z *Zero) Pathless(w http.ResponseWriter, r *http.Request) {
-	current, err := strconv.Atoi(r.Header.Get("Y"))
-	if err != nil || current < 0 || current >= count {
-		current = 0
-	}
-
-	prev := (current - 1 + count) % count
-	next := (current + 1) % count
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("X", strconv.Itoa(prev))
-	w.Header().Set("Y", strconv.Itoa(current))
-	w.Header().Set("Z", strconv.Itoa(next))
-
-	frame := z.Frames[current]
-	fmt.Fprint(w, *frame)
+	z.Add("count", len(z.Frames))
 }

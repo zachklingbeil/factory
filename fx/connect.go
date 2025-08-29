@@ -14,38 +14,9 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
-	"goauthentik.io/api/v3"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
-
-// NewAuth creates a new Authentik API client with the given baseURL and apikey.
-func (f *Fx) Authentik(baseURL, authentikApiKey string) {
-	cfg := api.NewConfiguration()
-	cfg.Host = baseURL
-	cfg.Scheme = "https"
-	cfg.DefaultHeader = map[string]string{
-		"Authorization": "Bearer " + authentikApiKey,
-	}
-	client := api.NewAPIClient(cfg)
-	f.Auth = client
-}
-
-// TestConnection fetches and prints the current user info to test the connection.
-func (f *Fx) WhoAmIAuthentik() error {
-	user, _, err := f.Auth.CoreApi.CoreUsersMeRetrieve(context.TODO()).Execute()
-	if err != nil {
-		return err
-	}
-
-	out, err := json.MarshalIndent(user, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(string(out))
-	return nil
-}
 
 // Establish geth.ipc connection
 func (f *Fx) Node() error {

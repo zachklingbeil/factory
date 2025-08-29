@@ -1,7 +1,7 @@
-package factory
+package main
 
 import (
-	"sync"
+	"net/http"
 
 	"github.com/zachklingbeil/factory/one"
 )
@@ -10,14 +10,16 @@ type Factory struct {
 	*one.One
 }
 
-type Motion struct {
-	*sync.Mutex
-	*sync.RWMutex
-	*sync.Cond
-}
-
-func InitFactory() *Factory {
+func NewFactory() *Factory {
 	return &Factory{
 		One: one.NewOne(),
 	}
+}
+
+func main() {
+	factory := one.NewOne()
+	go func() {
+		http.ListenAndServe(":1001", factory.Router)
+	}()
+	select {}
 }
